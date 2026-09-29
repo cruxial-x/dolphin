@@ -150,4 +150,10 @@ jclass GetAudioUtilsClass();
 jmethodID GetAudioUtilsGetSampleRate();
 jmethodID GetAudioUtilsGetFramesPerBuffer();
 
+jclass GetGBAHostClass();
+jmethodID GetGBAHostOnHostCreated();
+jmethodID GetGBAHostOnHostDestroyed();
+jmethodID GetGBAHostOnGameChanged();
+jmethodID GetGBAHostOnFrameEnded();
+
 }  // namespace IDCache

@@ -151,6 +151,12 @@ static jclass s_audio_utils_class;
 static jmethodID s_audio_utils_get_sample_rate;
 static jmethodID s_audio_utils_get_frames_per_buffer;
 
+static jclass s_gba_host_class;
+static jmethodID s_gba_host_on_host_created;
+static jmethodID s_gba_host_on_host_destroyed;
+static jmethodID s_gba_host_on_game_changed;
+static jmethodID s_gba_host_on_frame_ended;
+
 namespace IDCache
 {
 JNIEnv* GetEnvForThread()
@@ -721,6 +727,31 @@ jmethodID GetAudioUtilsGetFramesPerBuffer()
   return s_audio_utils_get_frames_per_buffer;
 }
 
+jclass GetGBAHostClass()
+{
+  return s_gba_host_class;
+}
+
+jmethodID GetGBAHostOnHostCreated()
+{
+  return s_gba_host_on_host_created;
+}
+
+jmethodID GetGBAHostOnHostDestroyed()
+{
+  return s_gba_host_on_host_destroyed;
+}
+
+jmethodID GetGBAHostOnGameChanged()
+{
+  return s_gba_host_on_game_changed;
+}
+
+jmethodID GetGBAHostOnFrameEnded()
+{
+  return s_gba_host_on_frame_ended;
+}
+
 }  // namespace IDCache
 
 extern "C" {
@@ -1015,6 +1046,14 @@ JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved)
       env->GetStaticMethodID(audio_utils_class, "getFramesPerBuffer", "()I");
   env->DeleteLocalRef(audio_utils_class);
 
+  const jclass gba_host_class = env->FindClass("org/dolphinemu/dolphinemu/features/gba/GbaHost");
+  s_gba_host_class = reinterpret_cast<jclass>(env->NewGlobalRef(gba_host_class));
+  s_gba_host_on_host_created = env->GetStaticMethodID(gba_host_class, "onHostCreated", "(III)V");
+  s_gba_host_on_host_destroyed = env->GetStaticMethodID(gba_host_class, "onHostDestroyed", "(I)V");
+  s_gba_host_on_game_changed = env->GetStaticMethodID(gba_host_class, "onGameChanged", "(III)V");
+  s_gba_host_on_frame_ended = env->GetStaticMethodID(gba_host_class, "onFrameEnded", "(I)V");
+  env->DeleteLocalRef(gba_host_class);
+
   return JNI_VERSION;
 }
 
@@ -1054,5 +1093,6 @@ JNIEXPORT void JNI_OnUnload(JavaVM* vm, void* reserved)
   env->DeleteGlobalRef(s_input_detector_class);
   env->DeleteGlobalRef(s_permission_handler_class);
   env->DeleteGlobalRef(s_audio_utils_class);
+  env->DeleteGlobalRef(s_gba_host_class);
 }
 }

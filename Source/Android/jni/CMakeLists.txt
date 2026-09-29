@@ -13,6 +13,7 @@ add_library(main SHARED
   GameList/GameFile.cpp
   GameList/GameFile.h
   GameList/GameFileCache.cpp
+  GBAHost.cpp
   GpuDriver.cpp
   InfinityConfig.cpp
   Input/Control.cpp
@@ -51,6 +52,7 @@ PRIVATE
 target_link_libraries(main
 PRIVATE
   android
+  jnigraphics
   log
   "-Wl,--no-warn-mismatch"
   "-Wl,--whole-archive"

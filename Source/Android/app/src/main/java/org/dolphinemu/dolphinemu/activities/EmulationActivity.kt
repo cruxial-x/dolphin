@@ -36,6 +36,7 @@ import org.dolphinemu.dolphinemu.R
 import org.dolphinemu.dolphinemu.databinding.ActivityEmulationBinding
 import org.dolphinemu.dolphinemu.databinding.DialogInputAdjustBinding
 import org.dolphinemu.dolphinemu.databinding.DialogNfcFiguresManagerBinding
+import org.dolphinemu.dolphinemu.features.gba.GbaDisplayController
 import org.dolphinemu.dolphinemu.features.infinitybase.InfinityConfig
 import org.dolphinemu.dolphinemu.features.infinitybase.model.Figure
 import org.dolphinemu.dolphinemu.features.infinitybase.ui.FigureSlot
@@ -219,6 +220,8 @@ class EmulationActivity : AppCompatActivity(), ThemeProvider {
         setContentView(binding.root)
 
         setInsets()
+
+        lifecycle.addObserver(GbaDisplayController(this))
 
         // Find or create the EmulationFragment
         emulationFragment = supportFragmentManager
