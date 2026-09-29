@@ -11,11 +11,12 @@ import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
+import org.dolphinemu.dolphinemu.features.settings.model.BooleanSetting
 import org.dolphinemu.dolphinemu.utils.Log
 
 /**
  * Shows the screen of the first active integrated GBA on a secondary display (such as the bottom
- * screen of a dual-screen handheld) while [activity] is started.
+ * screen of a dual-screen handheld) while [activity] is started, unless the user has disabled it.
  */
 class GbaDisplayController(private val activity: ComponentActivity) : DefaultLifecycleObserver,
     GbaHost.Listener, DisplayManager.DisplayListener {
@@ -50,7 +51,10 @@ class GbaDisplayController(private val activity: ComponentActivity) : DefaultLif
             return
 
         val deviceNumber = GbaHost.getFirstActiveGba()
-        val display = if (deviceNumber >= 0) findSecondaryDisplay() else null
+        val display = if (deviceNumber >= 0 && BooleanSetting.MAIN_GBA_SECONDARY_DISPLAY.boolean)
+            findSecondaryDisplay()
+        else
+            null
         if (display == null) {
             dismiss()
             return

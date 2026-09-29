@@ -93,6 +93,8 @@
     <string name="gba_bios_path">BIOS</string>
     <string name="gb_player_rom">Game Boy Player ROM</string>
     <string name="gba_saves_path">Saves</string>
+    <string name="gba_secondary_display">Show on Secondary Display</string>
+    <string name="gba_secondary_display_description">Shows the screen of the first integrated GBA on a second display, such as the second screen of a dual-screen device or an external monitor.</string>
     <string name="wii_submenu">Wii</string>
     <string name="wii_misc_settings">Misc Settings</string>
     <string name="wii_sd_card_settings">SD Card Settings</string>

@@ -875,6 +875,14 @@ class SettingsFragmentPresenter(
                 "/GBA/Saves/"
             )
         )
+        sl.add(
+            SwitchSetting(
+                context,
+                BooleanSetting.MAIN_GBA_SECONDARY_DISPLAY,
+                R.string.gba_secondary_display,
+                R.string.gba_secondary_display_description
+            )
+        )
     }
 
     private fun addWiiSettings(sl: ArrayList<SettingsItem>) {
