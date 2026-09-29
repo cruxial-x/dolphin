@@ -1469,7 +1469,7 @@ class SettingsFragmentPresenter(
             SingleChoiceSetting(
                 context,
                 IntSetting.MAIN_SI_DEVICE_0,
-                R.string.controller_0,
+                R.string.gc_port_0,
                 0,
                 R.array.gcpadTypeEntries,
                 R.array.gcpadTypeValues,
@@ -1480,7 +1480,7 @@ class SettingsFragmentPresenter(
             SingleChoiceSetting(
                 context,
                 IntSetting.MAIN_SI_DEVICE_1,
-                R.string.controller_1,
+                R.string.gc_port_1,
                 0,
                 R.array.gcpadTypeEntries,
                 R.array.gcpadTypeValues,
@@ -1491,7 +1491,7 @@ class SettingsFragmentPresenter(
             SingleChoiceSetting(
                 context,
                 IntSetting.MAIN_SI_DEVICE_2,
-                R.string.controller_2,
+                R.string.gc_port_2,
                 0,
                 R.array.gcpadTypeEntries,
                 R.array.gcpadTypeValues,
@@ -1502,7 +1502,7 @@ class SettingsFragmentPresenter(
             SingleChoiceSetting(
                 context,
                 IntSetting.MAIN_SI_DEVICE_3,
-                R.string.controller_3,
+                R.string.gc_port_3,
                 0,
                 R.array.gcpadTypeEntries,
                 R.array.gcpadTypeValues,

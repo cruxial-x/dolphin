@@ -395,10 +395,10 @@ class SettingsFragment : Fragment(), SettingsFragmentView {
             titles[MenuTag.GCPAD_TYPE] = R.string.gcpad_settings
             titles[MenuTag.WIIMOTE] = R.string.wiimote_settings
             titles[MenuTag.WIIMOTE_EXTENSION] = R.string.wiimote_extensions
-            titles[MenuTag.GCPAD_1] = R.string.controller_0
-            titles[MenuTag.GCPAD_2] = R.string.controller_1
-            titles[MenuTag.GCPAD_3] = R.string.controller_2
-            titles[MenuTag.GCPAD_4] = R.string.controller_3
+            titles[MenuTag.GCPAD_1] = R.string.gc_port_0
+            titles[MenuTag.GCPAD_2] = R.string.gc_port_1
+            titles[MenuTag.GCPAD_3] = R.string.gc_port_2
+            titles[MenuTag.GCPAD_4] = R.string.gc_port_3
             titles[MenuTag.WIIMOTE_1] = R.string.wiimote_0
             titles[MenuTag.WIIMOTE_2] = R.string.wiimote_1
             titles[MenuTag.WIIMOTE_3] = R.string.wiimote_2

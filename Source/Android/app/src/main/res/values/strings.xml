@@ -12,6 +12,10 @@
     <string name="controller_1">GameCube Controller 2</string>
     <string name="controller_2">GameCube Controller 3</string>
     <string name="controller_3">GameCube Controller 4</string>
+    <string name="gc_port_0">Port 1</string>
+    <string name="gc_port_1">Port 2</string>
+    <string name="gc_port_2">Port 3</string>
+    <string name="gc_port_3">Port 4</string>
 
     <string name="wiimote_0">Wii Remote 1</string>
     <string name="wiimote_1">Wii Remote 2</string>
