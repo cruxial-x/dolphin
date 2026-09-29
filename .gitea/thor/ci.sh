@@ -96,8 +96,10 @@ ccache -z > /dev/null
   assembleDebug)
 ccache -s
 
+# Reading all of the output (rather than piping it to head) avoids a SIGPIPE under pipefail.
 badging=$("$ANDROID_HOME/build-tools/37.0.0/aapt2" dump badging \
-  Source/Android/app/build/outputs/apk/debug/app-debug.apk | head -1)
+  Source/Android/app/build/outputs/apk/debug/app-debug.apk)
+badging=${badging%%$'\n'*}
 version_name=$(sed -E "s/.*versionName='([^']*)'.*/\1/" <<< "$badging")
 version_code=$(sed -E "s/.*versionCode='([^']*)'.*/\1/" <<< "$badging")
 apk="dolphin-thor-$version_name.apk"
