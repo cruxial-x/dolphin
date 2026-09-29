@@ -19,7 +19,9 @@ RUN curl -fsSLo /tmp/tools.zip \
     yes | sdkmanager --licenses > /dev/null && \
     sdkmanager --install \
       "platforms;android-37.0" \
+      "build-tools;36.0.0" \
       "build-tools;37.0.0" \
+      "platform-tools" \
       "cmake;3.31.6" \
       "ndk;30.0.15729638" > /dev/null
 
