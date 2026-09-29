@@ -1,0 +1,9 @@
+// Only build the native code for the ABI the AYN Thor uses. Unlike -Pandroid.injected.build.abi,
+// this doesn't mark the APK as test-only, so it can be installed without adb.
+allprojects {
+    pluginManager.withPlugin('com.android.application') {
+        androidComponents.finalizeDsl { android ->
+            android.defaultConfig.ndk.abiFilters.retainAll(['arm64-v8a'])
+        }
+    }
+}
