@@ -14,6 +14,10 @@
 #include <vector>
 
 #include "Common/CommonTypes.h"
+#include "Core/Config/MainSettings.h"
+#include "Core/HW/GBAPad.h"
+#include "Core/HW/GCPad.h"
+#include "Core/HW/SI/SI_Device.h"
 #include "Core/Host.h"
 
 #ifdef HAS_LIBMGBA
@@ -42,6 +46,43 @@ struct FrameSlot
 // while a host is being destroyed.
 std::array<FrameSlot, MAX_GBAS> s_frame_slots;
 
+std::mutex s_input_focus_mutex;
+int s_host_count = 0;
+
+// Lets one physical controller take turns controlling the GameCube controllers and the GBAs: when
+// the GBAs have input focus, the GameCube controllers are ignored, and vice versa. The GBAs keep
+// their input if there is no GameCube controller, since a GBA can be a player's only controller.
+// Returns whether there is a GameCube controller, that is, whether the focus makes a difference.
+bool ApplyInputFocus(bool gba_focus)
+{
+  bool has_gc_controller = false;
+  for (int i = 0; i < static_cast<int>(MAX_GBAS); ++i)
+  {
+    const SerialInterface::SIDevices device = Config::Get(Config::GetInfoForSIDevice(i));
+    // Controllers on a GameCube adapter don't share inputs with the GBAs.
+    if (SerialInterface::SIDevice_IsGCController(device) &&
+        device != SerialInterface::SIDEVICE_WIIU_ADAPTER)
+    {
+      has_gc_controller = true;
+    }
+  }
+
+  for (int i = 0; i < static_cast<int>(MAX_GBAS); ++i)
+  {
+    Pad::SetInputEnabled(i, !gba_focus);
+    Pad::SetGBAInputEnabled(i, gba_focus || !has_gc_controller);
+  }
+  return has_gc_controller;
+}
+
+void ResetInputFocus()
+{
+  for (int i = 0; i < static_cast<int>(MAX_GBAS); ++i)
+  {
+    Pad::SetInputEnabled(i, true);
+    Pad::SetGBAInputEnabled(i, true);
+  }
+}
 #ifdef HAS_LIBMGBA
 class GBAHost final : public GBAHostInterface
 {
@@ -68,6 +109,12 @@ GBAHost::GBAHost(std::weak_ptr<HW::GBA::Core> core) : m_core(std::move(core))
   m_device_number = info.device_number;
   UpdateDimensions(info);
 
+  {
+    std::lock_guard lock(s_input_focus_mutex);
+    if (s_host_count++ == 0)
+      ApplyInputFocus(false);
+  }
+
   JNIEnv* env = IDCache::GetEnvForThread();
   env->CallStaticVoidMethod(IDCache::GetGBAHostClass(), IDCache::GetGBAHostOnHostCreated(),
                             m_device_number, static_cast<jint>(info.width),
@@ -76,6 +123,12 @@ GBAHost::GBAHost(std::weak_ptr<HW::GBA::Core> core) : m_core(std::move(core))
 
 GBAHost::~GBAHost()
 {
+  {
+    std::lock_guard lock(s_input_focus_mutex);
+    if (--s_host_count == 0)
+      ResetInputFocus();
+  }
+
   {
     FrameSlot& slot = s_frame_slots[m_device_number];
     std::lock_guard lock(slot.mutex);
@@ -144,6 +197,15 @@ std::unique_ptr<GBAHostInterface> Host_CreateGBAHost(std::weak_ptr<HW::GBA::Core
 }
 
 extern "C" {
+
+JNIEXPORT jboolean JNICALL Java_org_dolphinemu_dolphinemu_features_gba_GbaHost_setInputFocusNative(
+    JNIEnv*, jclass, jboolean gba_focus)
+{
+  std::lock_guard lock(s_input_focus_mutex);
+  if (s_host_count == 0)
+    return JNI_FALSE;
+  return ApplyInputFocus(gba_focus) ? JNI_TRUE : JNI_FALSE;
+}
 
 JNIEXPORT jboolean JNICALL Java_org_dolphinemu_dolphinemu_features_gba_GbaHost_getFrame(
     JNIEnv* env, jclass, jint device_number, jobject bitmap)

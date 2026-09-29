@@ -9,6 +9,8 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Rect
 import android.util.Size
+import android.util.TypedValue
+import android.view.MotionEvent
 import android.view.View
 import kotlin.math.floor
 import kotlin.math.min
@@ -16,12 +18,29 @@ import kotlin.math.min
 /**
  * Shows the screen of one integrated GBA, scaled by the largest integer factor that fits the view
  * (or scaled to fit, if the view is smaller than the GBA screen) with nearest-neighbor filtering.
+ *
+ * Touching the view gives the GBAs the controller input focus.
  */
 class GbaScreenView(context: Context, private val deviceNumber: Int) : View(context),
     GbaHost.FrameListener {
     private val paint = Paint().apply { isFilterBitmap = false }
     private val destRect = Rect()
     private var bitmap: Bitmap? = null
+    private val focusPaint = Paint().apply {
+        style = Paint.Style.STROKE
+        color = Color.argb(0xA0, 0xFF, 0xFF, 0xFF)
+        strokeWidth =
+            TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, 2f, resources.displayMetrics)
+    }
+
+    /** Whether to outline the screen to show that the GBAs have the controller input focus. */
+    var showInputFocus = false
+        set(value) {
+            if (field != value) {
+                field = value
+                invalidate()
+            }
+        }
 
     init {
         setBackgroundColor(Color.BLACK)
@@ -75,5 +94,23 @@ class GbaScreenView(context: Context, private val deviceNumber: Int) : View(cont
         val frame = bitmap ?: return
         GbaHost.getFrame(deviceNumber, frame)
         canvas.drawBitmap(frame, null, destRect, paint)
+
+        if (showInputFocus) {
+            val inset = -focusPaint.strokeWidth
+            canvas.drawRect(
+                destRect.left + inset, destRect.top + inset,
+                destRect.right - inset, destRect.bottom - inset, focusPaint
+            )
+        }
     }
+
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        when (event.actionMasked) {
+            MotionEvent.ACTION_DOWN -> GbaHost.setInputFocus(true)
+            MotionEvent.ACTION_UP -> performClick()
+        }
+        return true
+    }
+
+    override fun performClick(): Boolean = super.performClick()
 }

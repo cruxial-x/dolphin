@@ -37,6 +37,17 @@ object GbaHost {
     // Only accessed on the main thread.
     private val activeGbas = arrayOfNulls<Size>(MAX_GBAS)
 
+    /** Whether the GBAs, rather than the GameCube controllers, receive controller input. */
+    var inputFocusOnGba = false
+        private set
+
+    /**
+     * Whether [inputFocusOnGba] makes a difference, which is only the case if there's also a
+     * GameCube controller for the controller input to go to.
+     */
+    var inputFocusMatters = false
+        private set
+
     /** Returns the frame size of the GBA on the given port, or null if there's no GBA there. */
     fun getActiveGba(deviceNumber: Int): Size? = activeGbas[deviceNumber]
 
@@ -50,9 +61,28 @@ object GbaHost {
     fun setFrameListener(deviceNumber: Int, listener: FrameListener?) =
         frameListeners.set(deviceNumber, listener)
 
+    /**
+     * Sends controller input to the GBAs or to the GameCube controllers. Must be called on the main
+     * thread. Does nothing if there is no active GBA.
+     */
+    fun setInputFocus(onGba: Boolean) {
+        if (getFirstActiveGba() < 0 || (onGba == inputFocusOnGba && inputFocusMatters))
+            return
+
+        inputFocusMatters = setInputFocusNative(onGba)
+        inputFocusOnGba = onGba
+        listeners.forEach { it.onGbasChanged() }
+    }
+
     private fun setActiveGba(deviceNumber: Int, size: Size?) {
         mainHandler.post {
+            val hadActiveGba = getFirstActiveGba() >= 0
             activeGbas[deviceNumber] = size
+            if (!hadActiveGba || getFirstActiveGba() < 0) {
+                // Native code gives the GameCube controllers the focus when the first GBA appears.
+                inputFocusOnGba = false
+                inputFocusMatters = setInputFocusNative(false)
+            }
             listeners.forEach { it.onGbasChanged() }
         }
     }
@@ -83,4 +113,8 @@ object GbaHost {
      */
     @JvmStatic
     external fun getFrame(deviceNumber: Int, bitmap: Bitmap): Boolean
+
+    /** Returns whether there is a GameCube controller for input to go to instead of the GBAs. */
+    @JvmStatic
+    private external fun setInputFocusNative(onGba: Boolean): Boolean
 }

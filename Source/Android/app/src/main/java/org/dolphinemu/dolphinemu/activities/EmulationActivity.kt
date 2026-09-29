@@ -37,6 +37,7 @@ import org.dolphinemu.dolphinemu.databinding.ActivityEmulationBinding
 import org.dolphinemu.dolphinemu.databinding.DialogInputAdjustBinding
 import org.dolphinemu.dolphinemu.databinding.DialogNfcFiguresManagerBinding
 import org.dolphinemu.dolphinemu.features.gba.GbaDisplayController
+import org.dolphinemu.dolphinemu.features.gba.GbaHost
 import org.dolphinemu.dolphinemu.features.infinitybase.InfinityConfig
 import org.dolphinemu.dolphinemu.features.infinitybase.model.Figure
 import org.dolphinemu.dolphinemu.features.infinitybase.ui.FigureSlot
@@ -965,6 +966,9 @@ class EmulationActivity : AppCompatActivity(), ThemeProvider {
 
     override fun dispatchTouchEvent(event: MotionEvent): Boolean {
         if (event.actionMasked == MotionEvent.ACTION_DOWN) {
+            // Touching this screen gives the GameCube controllers back the controller input focus.
+            GbaHost.setInputFocus(false)
+
             var anyMenuClosed = false
 
             var submenu = supportFragmentManager.findFragmentById(R.id.frame_submenu)

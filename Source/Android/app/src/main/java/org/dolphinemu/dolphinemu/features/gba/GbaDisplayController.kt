@@ -72,7 +72,10 @@ class GbaDisplayController(private val activity: ComponentActivity) : DefaultLif
                 return
             }
         }
-        presentation!!.setFrameSize(GbaHost.getActiveGba(deviceNumber)!!)
+        presentation!!.apply {
+            setFrameSize(GbaHost.getActiveGba(deviceNumber)!!)
+            setShowInputFocus(GbaHost.inputFocusOnGba && GbaHost.inputFocusMatters)
+        }
     }
 
     private fun dismiss() {

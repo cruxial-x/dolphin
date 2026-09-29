@@ -41,4 +41,8 @@ class GbaPresentation(outerContext: Context, display: Display, val deviceNumber:
     }
 
     fun setFrameSize(size: Size) = screenView.setFrameSize(size)
+
+    fun setShowInputFocus(show: Boolean) {
+        screenView.showInputFocus = show
+    }
 }
