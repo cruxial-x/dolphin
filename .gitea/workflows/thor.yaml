@@ -1,8 +1,9 @@
-# Builds the Android app for the AYN Thor and publishes it as a release.
+# Builds the Android app for the AYN Thor and publishes it as a release. The release tag is the
+# app's version name, so Obtainium (Forgejo/Codeberg source) can install and update it.
 #
 # - Pushes to the thor branch build that commit.
-# - Every Monday, thor is rebased onto upstream master (and master is fast-forwarded to it). If
-#   upstream moved, the result is pushed and built. A rebase conflict is reported instead.
+# - Every Monday, upstream master is merged into thor (and master is fast-forwarded to it). If
+#   upstream moved, the result is pushed and built. A merge conflict is reported as an issue.
 # - Running the workflow by hand does the same, but always builds.
 #
 # The build runs in a container on the runner host's Docker daemon, with a persistent volume
@@ -77,6 +78,12 @@ jobs:
           api="${{ gitea.server_url }}/api/v1/repos/${{ gitea.repository }}"
           auth="Authorization: token $TOKEN"
 
+          if existing=$(curl -fsS -H "$auth" "$api/releases/tags/$TAG" 2>/dev/null); then
+            echo "$TAG was already released."
+            echo "url=$(jq -r .html_url <<< "$existing")" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
           body=$(jq -n --arg tag "$TAG" --arg sha "$SHA" --arg name "Dolphin Thor $VERSION_NAME" \
             --rawfile notes out/notes.md \
             '{tag_name: $tag, target_commitish: $sha, name: $name, body: $notes}')
@@ -89,20 +96,20 @@ jobs:
 
           # Keep only the newest releases (and their tags) made by this workflow.
           curl -fsS -H "$auth" "$api/releases?limit=50" |
-            jq -r '[.[] | select(.tag_name | startswith("thor-"))] | .['"$KEEP_RELEASES"':][] | "\(.id) \(.tag_name)"' |
+            jq -r '[.[] | select(.name | startswith("Dolphin Thor "))] | .['"$KEEP_RELEASES"':][] | "\(.id) \(.tag_name)"' |
             while read -r old_id old_tag; do
               curl -fsS -X DELETE -H "$auth" "$api/releases/$old_id" > /dev/null
               curl -fsS -X DELETE -H "$auth" "$api/tags/$old_tag" > /dev/null
             done
 
-      - name: Report rebase conflict
+      - name: Report merge conflict
         if: failure() && steps.build.outputs.SYNC == 'conflict'
         env:
           TOKEN: ${{ gitea.token }}
         run: |
           api="${{ gitea.server_url }}/api/v1/repos/${{ gitea.repository }}"
           body=$(jq -n --rawfile text out/conflict.md \
-            '{title: "Thor: rebase onto upstream needs help", body: $text}')
+            '{title: "Thor: merging upstream needs help", body: $text}')
           curl -fsS -X POST -H "Authorization: token $TOKEN" -H "Content-Type: application/json" \
             -d "$body" "$api/issues" > /dev/null
 

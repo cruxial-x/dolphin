@@ -3,7 +3,7 @@
 # git checkout, the Gradle home and the ccache, so that only the first build is a full one.
 #
 #   MODE=build  Build SHA (a commit on BRANCH).
-#   MODE=sync   Rebase BRANCH onto upstream master, push it (and the master mirror), then build it.
+#   MODE=sync   Merge upstream master into BRANCH, push it (and the master mirror), then build it.
 #               With SYNC_BUILD_UNCHANGED=0, stop without building if upstream hadn't moved.
 #
 # Results go to /out: the APK, info.env (for the workflow) and notes.md (release notes).
@@ -60,22 +60,20 @@ if [ "$MODE" = sync ]; then
     if [ "${SYNC_BUILD_UNCHANGED:-1}" = 0 ]; then
       exit 0
     fi
-  elif ! git rebase upstream/master; then
-    stopped_at=$(git log -1 --format='%h %s' REBASE_HEAD 2>/dev/null || true)
+  elif ! git merge -q --no-edit -m "Merge upstream master into $BRANCH" upstream/master; then
     conflicts=$(git diff --name-only --diff-filter=U)
-    git rebase --abort
+    git merge --abort
     {
-      echo "Rebasing \`$BRANCH\` onto upstream \`$(git rev-parse --short upstream/master)\` stopped" \
-           "at \`$stopped_at\` with conflicts in:"
+      echo "Merging upstream \`$(git rev-parse --short=10 upstream/master)\` into \`$BRANCH\`" \
+           "conflicts in:"
       echo
       echo "$conflicts" | sed 's/^/- /'
     } > "$OUT/conflict.md"
     info SYNC conflict
     exit 3
   else
-    info SYNC rebased
-    git push origin "upstream/master:refs/heads/master"
-    git push --force-with-lease="$BRANCH:$old_head" origin "HEAD:refs/heads/$BRANCH"
+    info SYNC merged
+    git push origin "upstream/master:refs/heads/master" "HEAD:refs/heads/$BRANCH"
   fi
   SHA=$(git rev-parse HEAD)
 else
@@ -90,6 +88,9 @@ git submodule update -q --init --recursive --force --jobs 8
 mkdir -p ~/.android
 base64 -d <<< "$KEYSTORE_B64" > ~/.android/debug.keystore
 
+short_sha=$(git rev-parse --short=10 HEAD)
+export THOR_VERSION_SUFFIX="-$short_sha"
+
 ccache -z > /dev/null
 (cd Source/Android && ./gradlew --no-daemon --console=plain --init-script /ci/abi.init.gradle \
   assembleDebug)
@@ -99,15 +100,14 @@ badging=$("$ANDROID_HOME/build-tools/37.0.0/aapt2" dump badging \
   Source/Android/app/build/outputs/apk/debug/app-debug.apk | head -1)
 version_name=$(sed -E "s/.*versionName='([^']*)'.*/\1/" <<< "$badging")
 version_code=$(sed -E "s/.*versionCode='([^']*)'.*/\1/" <<< "$badging")
-short_sha=$(git rev-parse --short=10 HEAD)
-apk="dolphin-thor-${version_name%-debug}-$short_sha.apk"
+apk="dolphin-thor-$version_name.apk"
 cp Source/Android/app/build/outputs/apk/debug/app-debug.apk "$OUT/$apk"
 
 info SHA "$(git rev-parse HEAD)"
 info APK "$apk"
 info VERSION_NAME "$version_name"
 info VERSION_CODE "$version_code"
-info TAG "thor-${version_name%-debug}-$short_sha"
+info TAG "$version_name"
 
 base=$(git merge-base HEAD upstream/master)
 {
@@ -116,5 +116,5 @@ base=$(git merge-base HEAD upstream/master)
   echo
   echo "Thor commits on top of upstream:"
   echo
-  git log --reverse --format='- %s' "$base..HEAD"
+  git log --reverse --no-merges --format='- %s' "$base..HEAD"
 } > "$OUT/notes.md"
