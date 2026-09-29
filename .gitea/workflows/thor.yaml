@@ -1,9 +1,9 @@
 # Builds the Android app for the AYN Thor and publishes it as a release. The release tag is the
 # app's version name, so Obtainium (Forgejo/Codeberg source) can install and update it.
 #
-# - Pushes to the thor branch build that commit.
-# - Every Monday, upstream master is merged into thor (and master is fast-forwarded to it). If
-#   upstream moved, the result is pushed and built. A merge conflict is reported as an issue.
+# - Pushes to master build that commit.
+# - Every Monday, upstream master is merged into master. If upstream moved, the result is pushed
+#   and built. A merge conflict is reported as an issue.
 # - Running the workflow by hand does the same, but always builds.
 #
 # The build runs in a container on the runner host's Docker daemon, with a persistent volume
@@ -12,7 +12,7 @@ name: Thor APK
 
 on:
   push:
-    branches: [thor]
+    branches: [master]
   schedule:
     - cron: "0 9 * * 1"
   workflow_dispatch:
@@ -41,7 +41,7 @@ jobs:
         id: build
         env:
           GIT_TOKEN: ${{ gitea.token }}
-          KEYSTORE_B64: ${{ secrets.THOR_KEYSTORE }}
+          KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
           MODE: ${{ gitea.event_name == 'push' && 'build' || 'sync' }}
           SYNC_BUILD_UNCHANGED: ${{ gitea.event_name == 'workflow_dispatch' && '1' || '0' }}
         run: |
@@ -52,7 +52,7 @@ jobs:
           docker run --name "$name" --cpuset-cpus 0-11 --memory 12g \
             -v "$WORK_VOLUME:/work" \
             -e ORIGIN_URL="${{ gitea.server_url }}/${{ gitea.repository }}.git" \
-            -e BRANCH=thor -e SHA="${{ gitea.sha }}" \
+            -e BRANCH=master -e SHA="${{ gitea.sha }}" \
             -e MODE -e SYNC_BUILD_UNCHANGED -e GIT_TOKEN -e KEYSTORE_B64 \
             "$BUILDER_IMAGE"
           status=$?
@@ -119,4 +119,4 @@ jobs:
         with:
           status: ${{ job.status }}
           pass_message: "New Dolphin Thor build: ${{ steps.release.outputs.url }}"
-          fail_message: ${{ steps.build.outputs.SYNC == 'conflict' && 'Upstream Dolphin changes conflict with the Thor branch; an issue was opened.' || 'Dolphin Thor build failed - check logs' }}
+          fail_message: ${{ steps.build.outputs.SYNC == 'conflict' && 'Upstream Dolphin changes conflict with master; an issue was opened.' || 'Dolphin Thor build failed - check logs' }}

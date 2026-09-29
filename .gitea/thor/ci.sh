@@ -3,7 +3,7 @@
 # git checkout, the Gradle home and the ccache, so that only the first build is a full one.
 #
 #   MODE=build  Build SHA (a commit on BRANCH).
-#   MODE=sync   Merge upstream master into BRANCH, push it (and the master mirror), then build it.
+#   MODE=sync   Merge upstream master into BRANCH, push it, then build it.
 #               With SYNC_BUILD_UNCHANGED=0, stop without building if upstream hadn't moved.
 #
 # Results go to /out: the APK, info.env (for the workflow) and notes.md (release notes).
@@ -12,10 +12,10 @@ set -euo pipefail
 : "${ORIGIN_URL:?}"
 # Every build must be signed with the same key, or it can't be installed over the previous one.
 if [ -z "${KEYSTORE_B64:-}" ]; then
-  echo "KEYSTORE_B64 (the THOR_KEYSTORE secret) is not set." >&2
+  echo "KEYSTORE_B64 (the Actions secret of the same name) is not set." >&2
   exit 1
 fi
-BRANCH=${BRANCH:-thor}
+BRANCH=${BRANCH:-master}
 MODE=${MODE:-build}
 UPSTREAM_URL=${UPSTREAM_URL:-https://github.com/dolphin-emu/dolphin.git}
 SRC=/work/src
@@ -73,7 +73,7 @@ if [ "$MODE" = sync ]; then
     exit 3
   else
     info SYNC merged
-    git push origin "upstream/master:refs/heads/master" "HEAD:refs/heads/$BRANCH"
+    git push origin "HEAD:refs/heads/$BRANCH"
   fi
   SHA=$(git rev-parse HEAD)
 else
