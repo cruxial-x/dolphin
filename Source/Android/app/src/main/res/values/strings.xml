@@ -838,6 +838,7 @@ It can efficiently compress both junk data and encrypted Wii data.
     <string name="gcpad_taru_konga">DK Bongos</string>
     <string name="gcpad_am_baseboard">Triforce Baseboard</string>
     <string name="gcpad_gc_adapter">GameCube Adapter</string>
+    <string name="gcpad_gba_integrated">GBA (Integrated)</string>
 
     <!-- Wiimote Types -->
     <string name="wiimote_disabled">None</string>

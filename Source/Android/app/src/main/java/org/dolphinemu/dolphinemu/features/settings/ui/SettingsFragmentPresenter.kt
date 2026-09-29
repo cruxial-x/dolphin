@@ -2534,6 +2534,18 @@ class SettingsFragmentPresenter(
                 }
             }
 
+            13 -> {
+                // Integrated GBA
+                val gbaPad = EmulatedController.getGbaPad(gcPadNumber)
+
+                if (!TextUtils.isEmpty(gameId)) {
+                    addControllerPerGameSettings(sl, gbaPad, gcPadNumber)
+                } else {
+                    addControllerMetaSettings(sl, gbaPad)
+                    addControllerMappingSettings(sl, gbaPad, gcPadNumber, null)
+                }
+            }
+
             12 -> {
                 // Adapter
                 sl.add(

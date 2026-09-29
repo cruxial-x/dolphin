@@ -3,6 +3,7 @@
 package org.dolphinemu.dolphinemu.features.settings.ui
 
 import org.dolphinemu.dolphinemu.features.input.model.controlleremu.EmulatedController
+import org.dolphinemu.dolphinemu.features.settings.model.IntSetting
 
 enum class MenuTag {
     SETTINGS("settings"),
@@ -75,9 +76,17 @@ enum class MenuTag {
     }
 
     val correspondingEmulatedController: EmulatedController
-        get() = if (isGCPadMenu) EmulatedController.getGcPad(subType) else if (isWiimoteMenu) EmulatedController.getWiimote(
-            subType
-        ) else throw UnsupportedOperationException()
+        get() = if (isGCPadMenu) {
+            // 13 is SIDEVICE_GC_GBA_EMULATED
+            if (IntSetting.getSettingForSIDevice(subType).int == 13)
+                EmulatedController.getGbaPad(subType)
+            else
+                EmulatedController.getGcPad(subType)
+        } else if (isWiimoteMenu) {
+            EmulatedController.getWiimote(subType)
+        } else {
+            throw UnsupportedOperationException()
+        }
 
     val isSerialPort1Menu: Boolean
         get() = this == CONFIG_SERIALPORT1
