@@ -87,25 +87,26 @@ fi
 git submodule sync -q --recursive
 git submodule update -q --init --recursive --force --jobs 8
 
-mkdir -p ~/.android
-base64 -d <<< "$KEYSTORE_B64" > ~/.android/debug.keystore
+base64 -d <<< "$KEYSTORE_B64" > /tmp/thor.keystore
 
 short_sha=$(git rev-parse --short=10 HEAD)
 export THOR_VERSION_SUFFIX="-$short_sha"
 
 ccache -z > /dev/null
-(cd Source/Android && ./gradlew --no-daemon --console=plain --init-script /ci/abi.init.gradle \
-  assembleDebug)
+(cd Source/Android && ./gradlew --no-daemon --console=plain --init-script thor/thor.init.gradle \
+  -Pkeystore=/tmp/thor.keystore -Pstorepass="${KEYSTORE_PASS:-android}" \
+  -Pkeyalias="${KEY_ALIAS:-androiddebugkey}" -Pkeypass="${KEY_PASS:-${KEYSTORE_PASS:-android}}" \
+  assembleRelease)
 ccache -s
 
 # Reading all of the output (rather than piping it to head) avoids a SIGPIPE under pipefail.
 badging=$("$ANDROID_HOME/build-tools/37.0.0/aapt2" dump badging \
-  Source/Android/app/build/outputs/apk/debug/app-debug.apk)
+  Source/Android/app/build/outputs/apk/release/app-release.apk)
 badging=${badging%%$'\n'*}
 version_name=$(sed -E "s/.*versionName='([^']*)'.*/\1/" <<< "$badging")
 version_code=$(sed -E "s/.*versionCode='([^']*)'.*/\1/" <<< "$badging")
 apk="dolphin-thor-$version_name.apk"
-cp Source/Android/app/build/outputs/apk/debug/app-debug.apk "$OUT/$apk"
+cp Source/Android/app/build/outputs/apk/release/app-release.apk "$OUT/$apk"
 
 info SHA "$(git rev-parse HEAD)"
 info APK "$apk"

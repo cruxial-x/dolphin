@@ -30,7 +30,7 @@ jobs:
       - name: Build builder image
         run: |
           ctx=$(mktemp -d)
-          for f in Dockerfile ci.sh abi.init.gradle; do
+          for f in Dockerfile ci.sh; do
             curl -fsSL -o "$ctx/$f" \
               "${{ gitea.server_url }}/${{ gitea.repository }}/raw/commit/${{ gitea.sha }}/.gitea/thor/$f"
           done

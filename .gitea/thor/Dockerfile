@@ -25,5 +25,5 @@ RUN curl -fsSLo /tmp/tools.zip \
       "cmake;3.31.6" \
       "ndk;30.0.15729638" > /dev/null
 
-COPY ci.sh abi.init.gradle /ci/
+COPY ci.sh /ci/
 ENTRYPOINT ["/ci/ci.sh"]

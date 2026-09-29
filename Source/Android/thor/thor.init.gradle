@@ -1,0 +1,28 @@
+// Gradle init script that turns the release build into Dolphin Thor, without touching any of
+// upstream's build files:
+//
+// - Only builds the native code for arm64-v8a, the ABI the AYN Thor uses.
+// - Gives the app its own ID (org.dolphinemu.dolphinemu.thor), name and launcher icon, so that it
+//   can be installed next to the official Dolphin.
+// - Appends THOR_VERSION_SUFFIX (CI passes the commit hash) to the version name, which CI also uses
+//   as the release tag, since that's what Obtainium compares to detect updates.
+//
+// Usage: ./gradlew --init-script thor/thor.init.gradle assembleRelease
+def versionSuffix = System.getenv('THOR_VERSION_SUFFIX')
+
+allprojects {
+    pluginManager.withPlugin('com.android.application') {
+        def thorRes = new File(rootDir, 'thor/res')
+        androidComponents.finalizeDsl { android ->
+            android.defaultConfig.ndk.abiFilters.retainAll(['arm64-v8a'])
+
+            def release = android.buildTypes.getByName('release')
+            release.applicationIdSuffix = '.thor'
+            release.resValue('string', 'app_name_suffixed', 'Dolphin Thor')
+            if (versionSuffix)
+                release.versionNameSuffix = versionSuffix
+
+            android.sourceSets.getByName('release').res.srcDir(thorRes)
+        }
+    }
+}
