@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shown in the title bar of the game list. -->
+    <string name="app_name" translatable="false">Dolphin Thor</string>
+</resources>
