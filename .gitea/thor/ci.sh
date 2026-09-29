@@ -3,7 +3,7 @@
 # git checkout, the Gradle home and the ccache, so that only the first build is a full one.
 #
 #   MODE=build  Build SHA (a commit on BRANCH).
-#   MODE=sync   Merge upstream master into BRANCH, push it, then build it.
+#   MODE=sync   Update the master mirror, merge it into BRANCH, push both, then build BRANCH.
 #               With SYNC_BUILD_UNCHANGED=0, stop without building if upstream hadn't moved.
 #
 # Results go to /out: the APK, info.env (for the workflow) and notes.md (release notes).
@@ -15,7 +15,7 @@ if [ -z "${KEYSTORE_B64:-}" ]; then
   echo "KEYSTORE_B64 (the Actions secret of the same name) is not set." >&2
   exit 1
 fi
-BRANCH=${BRANCH:-master}
+BRANCH=${BRANCH:-thor}
 MODE=${MODE:-build}
 UPSTREAM_URL=${UPSTREAM_URL:-https://github.com/dolphin-emu/dolphin.git}
 SRC=/work/src
@@ -50,8 +50,10 @@ git fetch --no-tags upstream "+refs/heads/master:refs/remotes/upstream/master" \
   "+refs/tags/*:refs/tags/*"
 
 if [ "$MODE" = sync ]; then
-  old_head=$(git rev-parse "origin/$BRANCH")
-  git checkout -q -f -B "$BRANCH" "$old_head"
+  # master only ever mirrors upstream; this fails rather than overwrite anything else on it.
+  git push origin "upstream/master:refs/heads/master"
+
+  git checkout -q -f -B "$BRANCH" "origin/$BRANCH"
   git clean -q -ffd
 
   if git merge-base --is-ancestor upstream/master HEAD; then
