@@ -2,7 +2,7 @@
 # app's version name, so Obtainium (Forgejo/Codeberg source) can install and update it.
 #
 # - Pushes to thor (the default branch) build that commit.
-# - Every Monday, master is fast-forwarded to upstream master, so that it stays a pure mirror of
+# - Every night, master is fast-forwarded to upstream master, so that it stays a pure mirror of
 #   upstream, and then merged into thor. If upstream moved, the result is pushed and built. A
 #   merge conflict is reported as an issue.
 # - Running the workflow by hand does the same, but always builds.
@@ -15,13 +15,13 @@ on:
   push:
     branches: [thor]
   schedule:
-    - cron: "0 9 * * 1"
+    - cron: "0 9 * * *"
   workflow_dispatch:
 
 env:
   BUILDER_IMAGE: dolphin-thor-builder:latest
   WORK_VOLUME: dolphin-thor-work
-  KEEP_RELEASES: "10"
+  KEEP_RELEASES: "20"
 
 jobs:
   apk:
