@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- The colours come from thor.init.gradle, so another build can have its own. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
@@ -13,8 +14,8 @@
                 android:endX="108"
                 android:endY="0"
                 android:type="linear">
-                <item android:offset="0" android:color="#FF3217FF" />
-                <item android:offset="1" android:color="#FF1792FF" />
+                <item android:offset="0" android:color="@color/thor_icon_start" />
+                <item android:offset="1" android:color="@color/thor_icon_end" />
             </gradient>
         </aapt:attr>
     </path>
