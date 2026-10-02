@@ -6,6 +6,7 @@
 #   upstream, and then merged into thor. If upstream moved, the result is pushed and built. A
 #   merge conflict is reported as an issue.
 # - Running the workflow by hand does the same, but always builds.
+# - Each new release's tag is pushed to the repos in DOWNSTREAM, which starts their builds.
 #
 # The build runs in a container on the runner host's Docker daemon, with a persistent volume
 # holding the checkout and caches (see .gitea/thor).
@@ -22,6 +23,10 @@ env:
   BUILDER_IMAGE: dolphin-thor-builder:latest
   WORK_VOLUME: dolphin-thor-work
   KEEP_RELEASES: "20"
+  # Repos that rebuild each release, told about it by "Trigger downstream builds".
+  DOWNSTREAM: cruxial.org/dolphin-handheld
+  # git.cruxial.org's SSH host key, so the push can check it's talking to our Gitea.
+  GIT_HOST_KEY: git.cruxial.org ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJIjwddcQyswHrcIXIUrJ1NJuvDLnka9ToPePIoEQWz5
 
 jobs:
   apk:
@@ -102,6 +107,40 @@ jobs:
               curl -fsS -X DELETE -H "$auth" "$api/releases/$old_id" > /dev/null
               curl -fsS -X DELETE -H "$auth" "$api/tags/$old_tag" > /dev/null
             done
+
+      # Tells downstream repos about a new release by pushing its tag to them, which starts their
+      # workflows (dolphin-handheld rebuilds it as org.dolphinemu.handheld). They hold the public
+      # half of the org secret DEPLOY_KEY as a write deploy key. Without the secret they still
+      # find the release on their own schedule.
+      - name: Trigger downstream builds
+        if: steps.release.outputs.url != ''
+        env:
+          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
+          TAG: ${{ steps.build.outputs.TAG }}
+        run: |
+          set -e
+          if [ -z "$DEPLOY_KEY" ]; then
+            echo "DEPLOY_KEY is not set; downstream repos will pick the release up themselves."
+            exit 0
+          fi
+          command -v ssh > /dev/null || { apt-get update -qq && apt-get install -y -qq openssh-client > /dev/null; }
+          dir=$(mktemp -d)
+          trap 'rm -rf "$dir"' EXIT
+          (umask 077; printf '%s\n' "$DEPLOY_KEY" > "$dir/key")
+          echo "$GIT_HOST_KEY" > "$dir/known_hosts"
+          export GIT_SSH_COMMAND="ssh -i $dir/key -o IdentitiesOnly=yes -o UserKnownHostsFile=$dir/known_hosts -o StrictHostKeyChecking=yes"
+          for repo in $DOWNSTREAM; do
+            url="git@git.cruxial.org:$repo.git"
+            if git ls-remote --exit-code --tags "$url" "refs/tags/$TAG" > /dev/null; then
+              echo "$repo already has $TAG."
+              continue
+            fi
+            git init -q "$dir/repo"
+            git -C "$dir/repo" fetch -q --depth 1 "$url" main
+            git -C "$dir/repo" push -q "$url" "FETCH_HEAD:refs/tags/$TAG"
+            rm -rf "$dir/repo"
+            echo "Pushed $TAG to $repo."
+          done
 
       - name: Report merge conflict
         if: failure() && steps.build.outputs.SYNC == 'conflict'
