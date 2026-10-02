@@ -25,9 +25,12 @@ env:
   KEEP_RELEASES: "20"
   # Repos that rebuild each release, told about it by "Trigger downstream builds".
   DOWNSTREAM: cruxial.org/dolphin-handheld
-  # git.cruxial.org's SSH host key, so the push can check it's talking to our Gitea.
-  GIT_HOST_KEY: git.cruxial.org ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJIjwddcQyswHrcIXIUrJ1NJuvDLnka9ToPePIoEQWz5
-
+  # Gitea's SSH, reached inside the cluster (the job containers resolve cluster DNS), and its
+  # host key, so the push can check it's talking to our Gitea. To refresh the key:
+  # ssh-keyscan -p 2222 git.cruxial.org
+  GIT_SSH_HOST: cruxial-git-gitea-ssh.default.svc.cluster.local
+  GIT_SSH_PORT: "2222"
+  GIT_HOST_KEY: git.cruxial.org ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC8k+/wxjhtf4f6cDW8+d1ohaNb+UPXMOWRGoaCHBSyPHjXtlmZFm9V1lrxv/Z9Q9Hads4t5wVCKZQJPoBIRmWLL9RA+x37XH3TjBo0VUt3VIEgG8QNOkDmVl/8GpWJ2Jcq2d6QQAQCvTUCjTprAzAo7HmXtwUPZpBABmMdKSxOE2aivJ0l4WB+oIgwDFFLkmT3ZATMuR9IyMXSyWZjZPtYFGzwedLfnJJoBnXCOuYVBV93tbZccATrVg9ny5gmf+KzzFs6gH9TRiM1oxYyvtGPhs7CGo8s2Jig61FhZNxD/JeyboT98w7qS/TcW8Q1JnzKjNJSV7kI/MEJq04XfAtZWiCAYX3yR2m1ImCOwj/Y+Ex64m9DuY57auQIJbkMm5oa+i8sExeuo4wc5n39VLw25TONKePDgP6MqCLA/El+N23kE42N7cDJhfHQTWedoqB1tkiETvNpOAsyrmHZlam0kgxfNbj3HCv+YPs2chbJcPA1sk/IXMp2JabdsFMz4TFCblS9DYFA3opVa55Akru0axxwFRODtXjAf+BQku13uqfYCqBrB3alBfDkMLa+pjln9RBCAQqMTePNTdxnoKxTy9u0J80MghJYLfW7pELz1v4iDSK9/qlZVc24nnCp/Qo9DnYUlz1qEC4QOXdVuQa+1BwVdnbsV7TOUGbY9o2GMw==
 jobs:
   apk:
     runs-on: linux
@@ -128,9 +131,9 @@ jobs:
           trap 'rm -rf "$dir"' EXIT
           (umask 077; printf '%s\n' "$DEPLOY_KEY" > "$dir/key")
           echo "$GIT_HOST_KEY" > "$dir/known_hosts"
-          export GIT_SSH_COMMAND="ssh -i $dir/key -o IdentitiesOnly=yes -o UserKnownHostsFile=$dir/known_hosts -o StrictHostKeyChecking=yes"
+          export GIT_SSH_COMMAND="ssh -i $dir/key -o IdentitiesOnly=yes -o UserKnownHostsFile=$dir/known_hosts -o StrictHostKeyChecking=yes -o HostKeyAlias=git.cruxial.org"
           for repo in $DOWNSTREAM; do
-            url="git@git.cruxial.org:$repo.git"
+            url="ssh://git@$GIT_SSH_HOST:$GIT_SSH_PORT/$repo.git"
             if git ls-remote --exit-code --tags "$url" "refs/tags/$TAG" > /dev/null; then
               echo "$repo already has $TAG."
               continue
