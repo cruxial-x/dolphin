@@ -116,6 +116,7 @@ jobs:
       # half of the org secret DEPLOY_KEY as a write deploy key. Without the secret they still
       # find the release on their own schedule.
       - name: Trigger downstream builds
+        id: downstream
         if: steps.release.outputs.url != ''
         env:
           DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
@@ -162,4 +163,4 @@ jobs:
         with:
           status: ${{ job.status }}
           pass_message: "New Dolphin Thor build: ${{ steps.release.outputs.url }}"
-          fail_message: ${{ steps.build.outputs.SYNC == 'conflict' && 'Upstream Dolphin changes conflict with thor; an issue was opened.' || 'Dolphin Thor build failed - check logs' }}
+          fail_message: ${{ steps.build.outputs.SYNC == 'conflict' && 'Upstream Dolphin changes conflict with thor; an issue was opened.' || steps.downstream.outcome == 'failure' && format('Dolphin Thor {0} was released, but pushing its tag to the downstream repos failed - check logs', steps.build.outputs.TAG) || 'Dolphin Thor build failed - check logs' }}
