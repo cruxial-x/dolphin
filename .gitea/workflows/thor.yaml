@@ -6,6 +6,7 @@
 #   upstream, and then merged into thor. If upstream moved, the result is pushed and built. A
 #   merge conflict is reported as an issue.
 # - Running the workflow by hand does the same, but always builds.
+# - Each build is also pushed to MIRROR_REPO on GitHub and released there under the same tag.
 #
 # The build runs in a container on the runner host's Docker daemon, with a persistent volume
 # holding the checkout and caches (see .gitea/thor).
@@ -22,6 +23,8 @@ env:
   BUILDER_IMAGE: dolphin-thor-builder:latest
   WORK_VOLUME: dolphin-thor-work
   KEEP_RELEASES: "20"
+  # The public copy on GitHub: the code is pushed there and each release is published there too.
+  MIRROR_REPO: cruxial-x/dolphin
 
 jobs:
   apk:
@@ -45,6 +48,7 @@ jobs:
           KEYSTORE_B64: ${{ secrets.RELEASE_KEYSTORE_B64 }}
           KEYSTORE_PASS: ${{ secrets.RELEASE_KEYSTORE_PASS }}
           KEY_ALIAS: release
+          MIRROR_TOKEN: ${{ secrets.GH_MIRROR_TOKEN }}
           MODE: ${{ gitea.event_name == 'push' && 'build' || 'sync' }}
           SYNC_BUILD_UNCHANGED: ${{ gitea.event_name == 'workflow_dispatch' && '1' || '0' }}
         run: |
@@ -58,6 +62,7 @@ jobs:
             -e BRANCH=thor -e SHA="${{ gitea.sha }}" \
             -e MODE -e SYNC_BUILD_UNCHANGED -e GIT_TOKEN \
             -e KEYSTORE_B64 -e KEYSTORE_PASS -e KEY_ALIAS \
+            -e MIRROR_URL="https://github.com/$MIRROR_REPO.git" -e MIRROR_TOKEN \
             "$BUILDER_IMAGE"
           status=$?
           set -e
@@ -106,6 +111,46 @@ jobs:
               curl -fsS -X DELETE -H "$auth" "$api/tags/$old_tag" > /dev/null
             done
 
+      - name: Publish release on GitHub
+        if: steps.build.outputs.APK != ''
+        env:
+          TOKEN: ${{ secrets.GH_MIRROR_TOKEN }}
+          MIRROR: ${{ steps.build.outputs.MIRROR }}
+          TAG: ${{ steps.build.outputs.TAG }}
+          SHA: ${{ steps.build.outputs.SHA }}
+          APK: ${{ steps.build.outputs.APK }}
+          VERSION_NAME: ${{ steps.build.outputs.VERSION_NAME }}
+        run: |
+          if [ "$MIRROR" != pushed ]; then
+            echo "The push to $MIRROR_REPO failed (see the end of the build step)." >&2
+            exit 1
+          fi
+          api="https://api.github.com/repos/$MIRROR_REPO"
+          auth="Authorization: Bearer $TOKEN"
+
+          if curl -fsS -o /dev/null -H "$auth" "$api/releases/tags/$TAG" 2>/dev/null; then
+            echo "$TAG was already released."
+            exit 0
+          fi
+
+          body=$(jq -n --arg tag "$TAG" --arg sha "$SHA" --arg name "Dolphin Thor $VERSION_NAME" \
+            --rawfile notes out/notes.md \
+            '{tag_name: $tag, target_commitish: $sha, name: $name, body: $notes}')
+          release=$(curl -fsS -X POST -H "$auth" -H "Content-Type: application/json" \
+            -d "$body" "$api/releases")
+          id=$(jq -r .id <<< "$release")
+          curl -fsS -X POST -H "$auth" -H "Content-Type: application/vnd.android.package-archive" \
+            --data-binary "@out/$APK" \
+            "https://uploads.github.com/repos/$MIRROR_REPO/releases/$id/assets?name=$APK" > /dev/null
+          jq -r .html_url <<< "$release"
+
+          curl -fsS -H "$auth" "$api/releases?per_page=100" |
+            jq -r '[.[] | select(.name | startswith("Dolphin Thor "))] | .['"$KEEP_RELEASES"':][] | "\(.id) \(.tag_name)"' |
+            while read -r old_id old_tag; do
+              curl -fsS -X DELETE -H "$auth" "$api/releases/$old_id" > /dev/null
+              curl -fsS -X DELETE -H "$auth" "$api/git/refs/tags/$old_tag" > /dev/null
+            done
+
       - name: Report merge conflict
         if: failure() && steps.build.outputs.SYNC == 'conflict'
         env:
@@ -123,4 +168,4 @@ jobs:
         with:
           status: ${{ job.status }}
           pass_message: "New Dolphin Thor build: ${{ steps.release.outputs.url }}"
-          fail_message: ${{ steps.build.outputs.SYNC == 'conflict' && 'Upstream Dolphin changes conflict with thor; an issue was opened.' || 'Dolphin Thor build failed - check logs' }}
+          fail_message: ${{ steps.build.outputs.SYNC == 'conflict' && 'Upstream Dolphin changes conflict with thor; an issue was opened.' || steps.release.outputs.url != '' && 'Dolphin Thor was released here, but publishing it on GitHub failed - check logs' || 'Dolphin Thor build failed - check logs' }}

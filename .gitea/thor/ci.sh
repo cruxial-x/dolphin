@@ -6,6 +6,8 @@
 #   MODE=sync   Update the master mirror, merge it into BRANCH, push both, then build BRANCH.
 #               With SYNC_BUILD_UNCHANGED=0, stop without building if upstream hadn't moved.
 #
+# With MIRROR_URL (and MIRROR_TOKEN) set, BRANCH and master are also pushed there after the build.
+#
 # Results go to /out: the APK, info.env (for the workflow) and notes.md (release notes).
 set -euo pipefail
 
@@ -125,3 +127,16 @@ base=$(git merge-base HEAD upstream/master)
   echo
   git log --reverse --no-merges --format='- %s' "$base..HEAD"
 } > "$OUT/notes.md"
+
+# The public copy of the repository. This comes last and doesn't fail the build, so that the
+# release on this server still goes out; the workflow reports a failed push afterwards.
+if [ -n "${MIRROR_URL:-}" ]; then
+  # The first -c clears the helper above, so that GIT_TOKEN is never offered to the mirror.
+  if git -c credential.helper= \
+       -c credential.helper='!f() { echo username=x-access-token; echo "password=$MIRROR_TOKEN"; }; f' \
+       push --force "$MIRROR_URL" "HEAD:refs/heads/$BRANCH" upstream/master:refs/heads/master; then
+    info MIRROR pushed
+  else
+    info MIRROR failed
+  fi
+fi
