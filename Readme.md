@@ -1,3 +1,67 @@
+# Dolphin Thor
+
+An unofficial build of Dolphin for the [AYN Thor](https://www.ayntec.com/) that puts a Game Boy
+Advance on the bottom screen. Games such as The Legend of Zelda: Four Swords Adventures expect
+each player to hold a GBA as a second screen. Dolphin on desktop can run that GBA inside the
+emulator; this build makes it usable on Android and shows it on the Thor's second display while
+the game runs on the top one.
+
+**This is not an official Dolphin release and Dolphin's developers don't support it.** Please
+report problems [here](https://github.com/cruxial-x/dolphin/issues), not to the Dolphin project.
+
+## What it adds
+
+- A controller type on Android, **GBA (Integrated)**, which runs the GBA inside Dolphin, with
+  its own control mapping.
+- The first integrated GBA is shown on the secondary display.
+- Touch the bottom screen to send your controls to the GBA and the top screen to send them back
+  to the GameCube controller. The GBA screen is outlined while it has the controls. If no port
+  has a GameCube controller, as in Four Swords Adventures, the GBA always has them.
+- It installs next to regular Dolphin as "Dolphin Thor" (`org.dolphinemu.handheld`), so
+  frontends that know that ID can launch it.
+
+Everything else is Dolphin's development version, which this build follows: it is rebuilt each
+night when Dolphin has changed.
+
+## Install
+
+Add `https://github.com/cruxial-x/dolphin` in [Obtainium](https://obtainium.imranr.dev/) to
+install it and get updates, or download the APK from the
+[latest release](https://github.com/cruxial-x/dolphin/releases/latest). The APK is 64-bit ARM
+only.
+
+## Setup
+
+You need your own game dumps and a GBA BIOS file. Neither is included, and we can't help with
+finding them.
+
+1. In **Settings > Config > GameCube**, under **GBA Settings**, set **BIOS** to your GBA BIOS
+   file. **Show on Secondary Display** is in the same place and is on by default.
+2. In **Settings > GameCube Input**, set the port to **GBA (Integrated)**: Port 1 for Four
+   Swords Adventures, Port 2 for games that use a GBA next to a GameCube controller. Open that
+   port's settings to map the GBA's buttons.
+3. Start the game. The GBA appears on the bottom screen.
+
+## What has been tested
+
+Only an AYN Thor Max, with The Legend of Zelda: Four Swords Adventures. Reports from other Thor
+models, other dual-screen devices and other games are welcome.
+
+Not tested yet: save states, pausing, and changing the controller type while a game is running.
+
+## Credits
+
+Integrated GBA support on Android is not a new idea. Linkinworm
+([#14605](https://github.com/dolphin-emu/dolphin/pull/14605)) and SapphireRhodonite
+([#14745](https://github.com/dolphin-emu/dolphin/pull/14745)) both have work open against
+Dolphin, and this build borrows ideas from both. It is a smaller version aimed at the Thor.
+
+Like Dolphin, it is licensed under the GNU General Public License, version 2 or later. The build
+and release setup is in `.gitea/`, and the Thor-specific app settings are in
+`Source/Android/thor/`.
+
+Dolphin's own readme follows.
+
 # Dolphin - A GameCube and Wii Emulator
 
 [Homepage](https://dolphin-emu.org/) | [Project Site](https://github.com/dolphin-emu/dolphin) | [Buildbot](https://dolphin.ci/) | [Forums](https://forums.dolphin-emu.org/) | [Wiki](https://wiki.dolphin-emu.org/) | [GitHub Wiki](https://github.com/dolphin-emu/dolphin/wiki) | [Issue Tracker](https://bugs.dolphin-emu.org/projects/emulator/issues) | [Coding Style](https://github.com/dolphin-emu/dolphin/blob/master/Contributing.md) | [Transifex Page](https://app.transifex.com/dolphinemu/dolphin-emu/dashboard/) | [Analytics](https://mon.dolphin-emu.org/)
