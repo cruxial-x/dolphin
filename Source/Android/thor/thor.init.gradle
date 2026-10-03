@@ -2,21 +2,16 @@
 // upstream's build files:
 //
 // - Only builds the native code for arm64-v8a, the ABI the AYN Thor uses.
-// - Gives the app its own ID (org.dolphinemu.dolphinemu.thor), name and launcher icon, so that it
-//   can be installed next to the official Dolphin.
+// - Gives the app its own ID, name and launcher icon, so that it can be installed next to the
+//   official Dolphin. The ID is org.dolphinemu.handheld, which Cocoon (the Thor's frontend)
+//   already lists as a GameCube and Wii player ("Dolphin (Handheld)"); it only launches the
+//   emulators on its list. The ID was first used by the Dolphin build that Retroid's setup
+//   installed on its older handhelds, which the Thor doesn't have.
 // - Appends THOR_VERSION_SUFFIX (CI passes the commit hash) to the version name, which CI also uses
 //   as the release tag, since that's what Obtainium compares to detect updates.
-// - THOR_APPLICATION_ID replaces the ID. The dolphin-handheld repo builds the same commits as
-//   org.dolphinemu.handheld, an ID Cocoon (the Thor's frontend) already lists as a GameCube and
-//   Wii player, which it won't do for ours.
-// - THOR_ICON_START and THOR_ICON_END replace the launcher icon's gradient colours (#AARRGGBB,
-//   from bottom left to top right), so that build can look different.
 //
 // Usage: ./gradlew --init-script thor/thor.init.gradle assembleRelease
 def versionSuffix = System.getenv('THOR_VERSION_SUFFIX')
-def applicationId = System.getenv('THOR_APPLICATION_ID')
-def iconStart = System.getenv('THOR_ICON_START') ?: '#FF3217FF'
-def iconEnd = System.getenv('THOR_ICON_END') ?: '#FF1792FF'
 
 allprojects {
     pluginManager.withPlugin('com.android.application') {
@@ -25,20 +20,14 @@ allprojects {
             android.defaultConfig.ndk.abiFilters.retainAll(['arm64-v8a'])
 
             def release = android.buildTypes.getByName('release')
-            if (!applicationId)
-                release.applicationIdSuffix = '.thor'
             release.resValue('string', 'app_name_suffixed', 'Dolphin Thor')
-            release.resValue('color', 'thor_icon_start', iconStart)
-            release.resValue('color', 'thor_icon_end', iconEnd)
             if (versionSuffix)
                 release.versionNameSuffix = versionSuffix
 
             android.sourceSets.getByName('release').res.srcDir(thorRes)
         }
-        if (applicationId) {
-            androidComponents.onVariants(androidComponents.selector().withBuildType('release')) {
-                it.applicationId.set(applicationId)
-            }
+        androidComponents.onVariants(androidComponents.selector().withBuildType('release')) {
+            it.applicationId.set('org.dolphinemu.handheld')
         }
     }
 }

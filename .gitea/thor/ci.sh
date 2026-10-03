@@ -6,9 +6,6 @@
 #   MODE=sync   Update the master mirror, merge it into BRANCH, push both, then build BRANCH.
 #               With SYNC_BUILD_UNCHANGED=0, stop without building if upstream hadn't moved.
 #
-# THOR_APPLICATION_ID and APK_NAME change the app's ID and the APK's file name prefix; the
-# dolphin-handheld repo sets them to build org.dolphinemu.handheld (see thor.init.gradle).
-#
 # Results go to /out: the APK, info.env (for the workflow) and notes.md (release notes).
 set -euo pipefail
 
@@ -108,7 +105,7 @@ badging=$("$ANDROID_HOME/build-tools/37.0.0/aapt2" dump badging \
 badging=${badging%%$'\n'*}
 version_name=$(sed -E "s/.*versionName='([^']*)'.*/\1/" <<< "$badging")
 version_code=$(sed -E "s/.*versionCode='([^']*)'.*/\1/" <<< "$badging")
-apk="${APK_NAME:-dolphin-thor}-$version_name.apk"
+apk="dolphin-thor-$version_name.apk"
 cp Source/Android/app/build/outputs/apk/release/app-release.apk "$OUT/$apk"
 
 info SHA "$(git rev-parse HEAD)"

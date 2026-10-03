@@ -6,7 +6,6 @@
 #   upstream, and then merged into thor. If upstream moved, the result is pushed and built. A
 #   merge conflict is reported as an issue.
 # - Running the workflow by hand does the same, but always builds.
-# - Each new release's tag is pushed to the repos in DOWNSTREAM, which starts their builds.
 #
 # The build runs in a container on the runner host's Docker daemon, with a persistent volume
 # holding the checkout and caches (see .gitea/thor).
@@ -23,14 +22,7 @@ env:
   BUILDER_IMAGE: dolphin-thor-builder:latest
   WORK_VOLUME: dolphin-thor-work
   KEEP_RELEASES: "20"
-  # Repos that rebuild each release, told about it by "Trigger downstream builds".
-  DOWNSTREAM: cruxial.org/dolphin-handheld
-  # Gitea's SSH, reached inside the cluster (the job containers resolve cluster DNS), and its
-  # host key, so the push can check it's talking to our Gitea. To refresh the key:
-  # ssh-keyscan -p 2222 git.cruxial.org
-  GIT_SSH_HOST: cruxial-git-gitea-ssh.default.svc.cluster.local
-  GIT_SSH_PORT: "2222"
-  GIT_HOST_KEY: git.cruxial.org ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC8k+/wxjhtf4f6cDW8+d1ohaNb+UPXMOWRGoaCHBSyPHjXtlmZFm9V1lrxv/Z9Q9Hads4t5wVCKZQJPoBIRmWLL9RA+x37XH3TjBo0VUt3VIEgG8QNOkDmVl/8GpWJ2Jcq2d6QQAQCvTUCjTprAzAo7HmXtwUPZpBABmMdKSxOE2aivJ0l4WB+oIgwDFFLkmT3ZATMuR9IyMXSyWZjZPtYFGzwedLfnJJoBnXCOuYVBV93tbZccATrVg9ny5gmf+KzzFs6gH9TRiM1oxYyvtGPhs7CGo8s2Jig61FhZNxD/JeyboT98w7qS/TcW8Q1JnzKjNJSV7kI/MEJq04XfAtZWiCAYX3yR2m1ImCOwj/Y+Ex64m9DuY57auQIJbkMm5oa+i8sExeuo4wc5n39VLw25TONKePDgP6MqCLA/El+N23kE42N7cDJhfHQTWedoqB1tkiETvNpOAsyrmHZlam0kgxfNbj3HCv+YPs2chbJcPA1sk/IXMp2JabdsFMz4TFCblS9DYFA3opVa55Akru0axxwFRODtXjAf+BQku13uqfYCqBrB3alBfDkMLa+pjln9RBCAQqMTePNTdxnoKxTy9u0J80MghJYLfW7pELz1v4iDSK9/qlZVc24nnCp/Qo9DnYUlz1qEC4QOXdVuQa+1BwVdnbsV7TOUGbY9o2GMw==
+
 jobs:
   apk:
     runs-on: linux
@@ -111,41 +103,6 @@ jobs:
               curl -fsS -X DELETE -H "$auth" "$api/tags/$old_tag" > /dev/null
             done
 
-      # Tells downstream repos about a new release by pushing its tag to them, which starts their
-      # workflows (dolphin-handheld rebuilds it as org.dolphinemu.handheld). They hold the public
-      # half of the org secret DEPLOY_KEY as a write deploy key. Without the secret they still
-      # find the release on their own schedule.
-      - name: Trigger downstream builds
-        id: downstream
-        if: steps.release.outputs.url != ''
-        env:
-          DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}
-          TAG: ${{ steps.build.outputs.TAG }}
-        run: |
-          set -e
-          if [ -z "$DEPLOY_KEY" ]; then
-            echo "DEPLOY_KEY is not set; downstream repos will pick the release up themselves."
-            exit 0
-          fi
-          command -v ssh > /dev/null || { apt-get update -qq && apt-get install -y -qq openssh-client > /dev/null; }
-          dir=$(mktemp -d)
-          trap 'rm -rf "$dir"' EXIT
-          (umask 077; printf '%s\n' "$DEPLOY_KEY" > "$dir/key")
-          echo "$GIT_HOST_KEY" > "$dir/known_hosts"
-          export GIT_SSH_COMMAND="ssh -i $dir/key -o IdentitiesOnly=yes -o UserKnownHostsFile=$dir/known_hosts -o StrictHostKeyChecking=yes -o HostKeyAlias=git.cruxial.org"
-          for repo in $DOWNSTREAM; do
-            url="ssh://git@$GIT_SSH_HOST:$GIT_SSH_PORT/$repo.git"
-            if git ls-remote --exit-code --tags "$url" "refs/tags/$TAG" > /dev/null; then
-              echo "$repo already has $TAG."
-              continue
-            fi
-            git init -q "$dir/repo"
-            git -C "$dir/repo" fetch -q --depth 1 "$url" main
-            git -C "$dir/repo" push -q "$url" "FETCH_HEAD:refs/tags/$TAG"
-            rm -rf "$dir/repo"
-            echo "Pushed $TAG to $repo."
-          done
-
       - name: Report merge conflict
         if: failure() && steps.build.outputs.SYNC == 'conflict'
         env:
@@ -163,4 +120,4 @@ jobs:
         with:
           status: ${{ job.status }}
           pass_message: "New Dolphin Thor build: ${{ steps.release.outputs.url }}"
-          fail_message: ${{ steps.build.outputs.SYNC == 'conflict' && 'Upstream Dolphin changes conflict with thor; an issue was opened.' || steps.downstream.outcome == 'failure' && format('Dolphin Thor {0} was released, but pushing its tag to the downstream repos failed - check logs', steps.build.outputs.TAG) || 'Dolphin Thor build failed - check logs' }}
+          fail_message: ${{ steps.build.outputs.SYNC == 'conflict' && 'Upstream Dolphin changes conflict with thor; an issue was opened.' || 'Dolphin Thor build failed - check logs' }}
