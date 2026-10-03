@@ -11,10 +11,12 @@ set -euo pipefail
 
 : "${ORIGIN_URL:?}"
 # Every build must be signed with the same key, or it can't be installed over the previous one.
-if [ -z "${KEYSTORE_B64:-}" ]; then
-  echo "KEYSTORE_B64 (the Actions secret of the same name) is not set." >&2
+if [ -z "${KEYSTORE_B64:-}" ] || [ -z "${KEYSTORE_PASS:-}" ]; then
+  echo "KEYSTORE_B64 and KEYSTORE_PASS (the Actions secrets RELEASE_KEYSTORE_B64 and" \
+       "RELEASE_KEYSTORE_PASS) must both be set." >&2
   exit 1
 fi
+: "${KEY_ALIAS:?}"
 BRANCH=${BRANCH:-thor}
 MODE=${MODE:-build}
 UPSTREAM_URL=${UPSTREAM_URL:-https://github.com/dolphin-emu/dolphin.git}
@@ -94,8 +96,8 @@ export THOR_VERSION_SUFFIX="-$short_sha"
 
 ccache -z > /dev/null
 (cd Source/Android && ./gradlew --no-daemon --console=plain --init-script thor/thor.init.gradle \
-  -Pkeystore=/tmp/thor.keystore -Pstorepass="${KEYSTORE_PASS:-android}" \
-  -Pkeyalias="${KEY_ALIAS:-androiddebugkey}" -Pkeypass="${KEY_PASS:-${KEYSTORE_PASS:-android}}" \
+  -Pkeystore=/tmp/thor.keystore -Pstorepass="$KEYSTORE_PASS" \
+  -Pkeyalias="$KEY_ALIAS" -Pkeypass="${KEY_PASS:-$KEYSTORE_PASS}" \
   assembleRelease)
 ccache -s
 
