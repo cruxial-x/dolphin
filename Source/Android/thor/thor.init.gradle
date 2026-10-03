@@ -9,9 +9,13 @@
 //   installed on its older handhelds, which the Thor doesn't have.
 // - Appends THOR_VERSION_SUFFIX (CI passes the commit hash) to the version name, which CI also uses
 //   as the release tag, since that's what Obtainium compares to detect updates.
+// - With THOR_DEV=1, builds the test app instead: "Dolphin Thor Dev", under the ID of Dolphin's
+//   own debug builds (org.dolphinemu.dolphinemu.debug), so that it can be installed next to
+//   Dolphin Thor. It is otherwise the same release build.
 //
 // Usage: ./gradlew --init-script thor/thor.init.gradle assembleRelease
 def versionSuffix = System.getenv('THOR_VERSION_SUFFIX')
+def dev = System.getenv('THOR_DEV') == '1'
 
 allprojects {
     pluginManager.withPlugin('com.android.application') {
@@ -20,14 +24,14 @@ allprojects {
             android.defaultConfig.ndk.abiFilters.retainAll(['arm64-v8a'])
 
             def release = android.buildTypes.getByName('release')
-            release.resValue('string', 'app_name_suffixed', 'Dolphin Thor')
+            release.resValue('string', 'app_name_suffixed', dev ? 'Dolphin Thor Dev' : 'Dolphin Thor')
             if (versionSuffix)
                 release.versionNameSuffix = versionSuffix
 
             android.sourceSets.getByName('release').res.srcDir(thorRes)
         }
         androidComponents.onVariants(androidComponents.selector().withBuildType('release')) {
-            it.applicationId.set('org.dolphinemu.handheld')
+            it.applicationId.set(dev ? 'org.dolphinemu.dolphinemu.debug' : 'org.dolphinemu.handheld')
         }
     }
 }
