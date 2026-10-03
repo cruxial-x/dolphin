@@ -42,7 +42,9 @@ jobs:
         id: build
         env:
           GIT_TOKEN: ${{ gitea.token }}
-          KEYSTORE_B64: ${{ secrets.KEYSTORE_B64 }}
+          KEYSTORE_B64: ${{ secrets.RELEASE_KEYSTORE_B64 }}
+          KEYSTORE_PASS: ${{ secrets.RELEASE_KEYSTORE_PASS }}
+          KEY_ALIAS: release
           MODE: ${{ gitea.event_name == 'push' && 'build' || 'sync' }}
           SYNC_BUILD_UNCHANGED: ${{ gitea.event_name == 'workflow_dispatch' && '1' || '0' }}
         run: |
@@ -54,7 +56,8 @@ jobs:
             -v "$WORK_VOLUME:/work" \
             -e ORIGIN_URL="${{ gitea.server_url }}/${{ gitea.repository }}.git" \
             -e BRANCH=thor -e SHA="${{ gitea.sha }}" \
-            -e MODE -e SYNC_BUILD_UNCHANGED -e GIT_TOKEN -e KEYSTORE_B64 \
+            -e MODE -e SYNC_BUILD_UNCHANGED -e GIT_TOKEN \
+            -e KEYSTORE_B64 -e KEYSTORE_PASS -e KEY_ALIAS \
             "$BUILDER_IMAGE"
           status=$?
           set -e
