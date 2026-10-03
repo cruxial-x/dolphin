@@ -37,15 +37,19 @@ finding them.
 
 1. In **Settings > Config > GameCube**, under **GBA Settings**, set **BIOS** to your GBA BIOS
    file. **Show on Secondary Display** is in the same place and is on by default.
-2. In **Settings > GameCube Input**, set the port to **GBA (Integrated)**: Port 1 for Four
-   Swords Adventures, Port 2 for games that use a GBA next to a GameCube controller. Open that
-   port's settings to map the GBA's buttons.
+2. Few games use a GBA, so set it per game: long-press the game in the list, choose **Edit Game
+   Settings**, then **GameCube Input**, and set the port to **GBA (Integrated)**. Use Port 1
+   for Four Swords Adventures, and Port 2 for games that use a GBA next to a GameCube
+   controller, such as The Wind Waker. Open that port's settings to map the GBA's buttons.
 3. Start the game. The GBA appears on the bottom screen.
+
+To use a GBA in every game instead, make the same change in **Settings > GameCube Input**.
 
 ## What has been tested
 
-Only an AYN Thor Max, with The Legend of Zelda: Four Swords Adventures. Reports from other Thor
-models, other dual-screen devices and other games are welcome.
+Only an AYN Thor Max, with The Legend of Zelda: Four Swords Adventures and The Wind Waker's
+Tingle Tuner. Reports from other Thor models, other dual-screen devices and other games are
+welcome.
 
 Not tested yet: save states, pausing, and changing the controller type while a game is running.
 
