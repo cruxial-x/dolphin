@@ -855,6 +855,15 @@ class SettingsFragmentPresenter(
                 "/GBA/gba_bios.bin"
             )
         )
+        val gbaRomTitles = arrayOf(
+            R.string.gba_rom_port_1,
+            R.string.gba_rom_port_2,
+            R.string.gba_rom_port_3,
+            R.string.gba_rom_port_4
+        )
+        for ((port, title) in gbaRomTitles.withIndex()) {
+            addGbaRomSetting(sl, port, title)
+        }
         sl.add(
             FilePicker(
                 context,
@@ -881,6 +890,28 @@ class SettingsFragmentPresenter(
                 BooleanSetting.MAIN_GBA_SECONDARY_DISPLAY,
                 R.string.gba_secondary_display,
                 R.string.gba_secondary_display_description
+            )
+        )
+    }
+
+    /**
+     * Adds the setting for the game inserted in the integrated GBA connected to a controller port.
+     */
+    private fun addGbaRomSetting(sl: ArrayList<SettingsItem>, port: Int, titleId: Int) {
+        val settings = arrayOf(
+            StringSetting.MAIN_GBA_ROM_1,
+            StringSetting.MAIN_GBA_ROM_2,
+            StringSetting.MAIN_GBA_ROM_3,
+            StringSetting.MAIN_GBA_ROM_4
+        )
+        sl.add(
+            FilePicker(
+                context,
+                settings[port],
+                titleId,
+                0,
+                fragmentView.activityResultLaunchers.requestGbaRomFile,
+                null
             )
         )
     }
@@ -2546,6 +2577,7 @@ class SettingsFragmentPresenter(
                 // Integrated GBA
                 val gbaPad = EmulatedController.getGbaPad(gcPadNumber)
 
+                addGbaRomSetting(sl, gcPadNumber, R.string.gba_rom)
                 if (!TextUtils.isEmpty(gameId)) {
                     addControllerPerGameSettings(sl, gbaPad, gcPadNumber)
                 } else {
