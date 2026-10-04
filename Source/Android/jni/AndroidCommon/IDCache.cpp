@@ -156,6 +156,7 @@ static jmethodID s_gba_host_on_host_created;
 static jmethodID s_gba_host_on_host_destroyed;
 static jmethodID s_gba_host_on_game_changed;
 static jmethodID s_gba_host_on_frame_ended;
+static jmethodID s_gba_host_on_save_opening;
 
 namespace IDCache
 {
@@ -752,6 +753,11 @@ jmethodID GetGBAHostOnFrameEnded()
   return s_gba_host_on_frame_ended;
 }
 
+jmethodID GetGBAHostOnSaveOpening()
+{
+  return s_gba_host_on_save_opening;
+}
+
 }  // namespace IDCache
 
 extern "C" {
@@ -1052,6 +1058,8 @@ JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved)
   s_gba_host_on_host_destroyed = env->GetStaticMethodID(gba_host_class, "onHostDestroyed", "(I)V");
   s_gba_host_on_game_changed = env->GetStaticMethodID(gba_host_class, "onGameChanged", "(III)V");
   s_gba_host_on_frame_ended = env->GetStaticMethodID(gba_host_class, "onFrameEnded", "(I)V");
+  s_gba_host_on_save_opening = env->GetStaticMethodID(
+      gba_host_class, "onSaveOpening", "(ILjava/lang/String;Ljava/lang/String;)V");
   env->DeleteLocalRef(gba_host_class);
 
   return JNI_VERSION;

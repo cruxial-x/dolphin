@@ -94,7 +94,17 @@ object GbaHost {
 
     @Keep
     @JvmStatic
-    fun onHostDestroyed(deviceNumber: Int) = setActiveGba(deviceNumber, null)
+    fun onHostDestroyed(deviceNumber: Int) {
+        // The host is destroyed after its GBA has stopped and closed its save.
+        GbaSaveSync.onGbaStopped(deviceNumber)
+        setActiveGba(deviceNumber, null)
+    }
+
+    /** Called before the GBA on the given port opens its save, which is before it has a host. */
+    @Keep
+    @JvmStatic
+    fun onSaveOpening(deviceNumber: Int, romPath: String, savePath: String) =
+        GbaSaveSync.onSaveOpening(deviceNumber, romPath, savePath)
 
     @Keep
     @JvmStatic

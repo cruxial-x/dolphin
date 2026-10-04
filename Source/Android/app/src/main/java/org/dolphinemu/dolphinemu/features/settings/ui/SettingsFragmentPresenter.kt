@@ -21,6 +21,7 @@ import kotlinx.coroutines.withContext
 import org.dolphinemu.dolphinemu.NativeLibrary
 import org.dolphinemu.dolphinemu.R
 import org.dolphinemu.dolphinemu.activities.UserDataActivity
+import org.dolphinemu.dolphinemu.features.gba.GbaLinkedSaves
 import org.dolphinemu.dolphinemu.features.input.model.ControlGroupEnabledSetting
 import org.dolphinemu.dolphinemu.features.input.model.InputMappingBooleanSetting
 import org.dolphinemu.dolphinemu.features.input.model.InputMappingDoubleSetting
@@ -35,6 +36,7 @@ import org.dolphinemu.dolphinemu.features.input.ui.ProfileDialog
 import org.dolphinemu.dolphinemu.features.input.ui.ProfileDialogPresenter
 import org.dolphinemu.dolphinemu.features.settings.model.AbstractBooleanSetting
 import org.dolphinemu.dolphinemu.features.settings.model.AbstractIntSetting
+import org.dolphinemu.dolphinemu.features.settings.model.AbstractStringSetting
 import org.dolphinemu.dolphinemu.features.settings.model.AchievementModel
 import org.dolphinemu.dolphinemu.features.settings.model.AchievementModel.logout
 import org.dolphinemu.dolphinemu.features.settings.model.AdHocBooleanSetting
@@ -48,10 +50,12 @@ import org.dolphinemu.dolphinemu.features.settings.model.Settings
 import org.dolphinemu.dolphinemu.features.settings.model.StringSetting
 import org.dolphinemu.dolphinemu.features.settings.model.view.DateTimeChoiceSetting
 import org.dolphinemu.dolphinemu.features.settings.model.view.DirectoryPicker
+import org.dolphinemu.dolphinemu.features.settings.model.view.DocumentTreePicker
 import org.dolphinemu.dolphinemu.features.settings.model.view.FilePicker
 import org.dolphinemu.dolphinemu.features.settings.model.view.FloatSliderSetting
 import org.dolphinemu.dolphinemu.features.settings.model.view.HeaderSetting
 import org.dolphinemu.dolphinemu.features.settings.model.view.HyperLinkHeaderSetting
+import org.dolphinemu.dolphinemu.features.settings.model.view.InfoSetting
 import org.dolphinemu.dolphinemu.features.settings.model.view.InputStringSetting
 import org.dolphinemu.dolphinemu.features.settings.model.view.IntSliderSetting
 import org.dolphinemu.dolphinemu.features.settings.model.view.InvertedSwitchSetting
@@ -885,6 +889,15 @@ class SettingsFragmentPresenter(
             )
         )
         sl.add(
+            DocumentTreePicker(
+                context,
+                StringSetting.MAIN_GBA_SAVES_FOLDER,
+                R.string.gba_saves_folder,
+                0,
+                fragmentView.activityResultLaunchers.requestGbaSavesFolder
+            )
+        )
+        sl.add(
             SwitchSetting(
                 context,
                 BooleanSetting.MAIN_GBA_SECONDARY_DISPLAY,
@@ -897,23 +910,115 @@ class SettingsFragmentPresenter(
     /**
      * Adds the setting for the game inserted in the integrated GBA connected to a controller port.
      */
-    private fun addGbaRomSetting(sl: ArrayList<SettingsItem>, port: Int, titleId: Int) {
+    private fun addGbaRomSetting(
+        sl: ArrayList<SettingsItem>,
+        port: Int,
+        titleId: Int,
+        showSave: Boolean = false
+    ) {
         val settings = arrayOf(
             StringSetting.MAIN_GBA_ROM_1,
             StringSetting.MAIN_GBA_ROM_2,
             StringSetting.MAIN_GBA_ROM_3,
             StringSetting.MAIN_GBA_ROM_4
         )
+        val rom = settings[port]
+        if (!showSave) {
+            sl.add(
+                FilePicker(
+                    context,
+                    rom,
+                    titleId,
+                    0,
+                    fragmentView.activityResultLaunchers.requestGbaRomFile,
+                    null
+                )
+            )
+            return
+        }
+
+        // Which save is used depends on the ROM and on the save chosen here, so the list is
+        // rebuilt when either changes.
         sl.add(
             FilePicker(
                 context,
-                settings[port],
+                rebuildingListOnChange(rom),
                 titleId,
                 0,
                 fragmentView.activityResultLaunchers.requestGbaRomFile,
                 null
             )
         )
+
+        val romPath = rom.string
+        if (romPath.isEmpty()) return
+
+        val chosenSaves = arrayOf(
+            StringSetting.MAIN_GBA_SAVE_1,
+            StringSetting.MAIN_GBA_SAVE_2,
+            StringSetting.MAIN_GBA_SAVE_3,
+            StringSetting.MAIN_GBA_SAVE_4
+        )
+        val chosenSave = chosenSaves[port]
+        val savePicker = FilePicker(
+            context,
+            rebuildingListOnChange(chosenSave),
+            R.string.gba_save,
+            0,
+            fragmentView.activityResultLaunchers.requestGbaSaveFile,
+            null
+        )
+
+        val chosen = chosenSave.string
+        val description = if (chosen.isNotEmpty()) {
+            val save = GbaLinkedSaves.getChosenSave(chosen)
+            when {
+                save == null -> context.getString(R.string.gba_save_chosen_missing)
+                !save.hasSaveSize -> context.getString(R.string.gba_save_wrong_size, save.name)
+                else -> context.getString(R.string.gba_save_chosen, save.name)
+            }
+        } else {
+            val save = GbaLinkedSaves.findSave(romPath)
+            when {
+                !GbaLinkedSaves.isFolderSet -> context.getString(R.string.gba_save_no_folder)
+                save == null -> context.getString(
+                    R.string.gba_save_not_found,
+                    GbaLinkedSaves.getSaveBaseName(romPath) ?: ""
+                )
+
+                !save.hasSaveSize -> context.getString(R.string.gba_save_wrong_size, save.name)
+                else -> context.getString(R.string.gba_save_linked, save.name)
+            }
+        }
+        sl.add(InfoSetting(context.getString(R.string.gba_save), description, savePicker))
+    }
+
+    /**
+     * Wraps a setting so that the settings list is rebuilt whenever it is changed, for settings
+     * that decide what other rows show.
+     */
+    private fun rebuildingListOnChange(setting: AbstractStringSetting): AbstractStringSetting {
+        return object : AbstractStringSetting {
+            override val string: String
+                get() = setting.string
+
+            override fun setString(settings: Settings, newValue: String) {
+                setting.setString(settings, newValue)
+                loadSettingsList()
+            }
+
+            override val isOverridden: Boolean
+                get() = setting.isOverridden
+
+            override val isRuntimeEditable: Boolean
+                get() = setting.isRuntimeEditable
+
+            override fun delete(settings: Settings): Boolean {
+                val result = setting.delete(settings)
+                loadSettingsList()
+                return result
+            }
+        }
     }
 
     private fun addWiiSettings(sl: ArrayList<SettingsItem>) {
@@ -2577,7 +2682,7 @@ class SettingsFragmentPresenter(
                 // Integrated GBA
                 val gbaPad = EmulatedController.getGbaPad(gcPadNumber)
 
-                addGbaRomSetting(sl, gcPadNumber, R.string.gba_rom)
+                addGbaRomSetting(sl, gcPadNumber, R.string.gba_rom, true)
                 if (!TextUtils.isEmpty(gameId)) {
                     addControllerPerGameSettings(sl, gbaPad, gcPadNumber)
                 } else {

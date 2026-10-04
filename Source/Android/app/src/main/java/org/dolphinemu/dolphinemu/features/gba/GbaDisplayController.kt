@@ -36,6 +36,9 @@ class GbaDisplayController(private val activity: ComponentActivity) : DefaultLif
         GbaHost.removeListener(this)
         displayManager.unregisterDisplayListener(this)
         dismiss()
+
+        // The app can be killed without notice once it is in the background.
+        GbaSaveSync.copyOutAll()
     }
 
     override fun onGbasChanged() = update()

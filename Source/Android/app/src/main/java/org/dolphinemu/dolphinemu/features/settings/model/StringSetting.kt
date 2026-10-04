@@ -76,6 +76,16 @@ enum class StringSetting(
     MAIN_GBA_ROM_4(Settings.FILE_DOLPHIN, Settings.SECTION_INI_GBA, "Rom4", ""),
     MAIN_GB_PLAYER_ROM(Settings.FILE_DOLPHIN, Settings.SECTION_INI_GBA, "GBPlayerRom", ""),
     MAIN_GBA_SAVES_PATH(Settings.FILE_DOLPHIN, Settings.SECTION_INI_GBA, "SavesPath", ""),
+    MAIN_GBA_SAVE_1(Settings.FILE_DOLPHIN, Settings.SECTION_INI_GBA, "LinkedSave1", ""),
+    MAIN_GBA_SAVE_2(Settings.FILE_DOLPHIN, Settings.SECTION_INI_GBA, "LinkedSave2", ""),
+    MAIN_GBA_SAVE_3(Settings.FILE_DOLPHIN, Settings.SECTION_INI_GBA, "LinkedSave3", ""),
+    MAIN_GBA_SAVE_4(Settings.FILE_DOLPHIN, Settings.SECTION_INI_GBA, "LinkedSave4", ""),
+    MAIN_GBA_SAVES_FOLDER(
+        Settings.FILE_DOLPHIN,
+        Settings.SECTION_INI_ANDROID,
+        "GBASavesFolder",
+        ""
+    ),
     MAIN_TRIFORCE_IP_REDIRECTIONS(
         Settings.FILE_DOLPHIN,
         Settings.SECTION_INI_CORE,

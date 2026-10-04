@@ -24,7 +24,9 @@
 #include "Core/HW/GBACore.h"
 #endif
 
+#include "jni/AndroidCommon/AndroidCommon.h"
 #include "jni/AndroidCommon/IDCache.h"
+#include "jni/GBASaves.h"
 
 // The Android frontend hands GBA frames to Kotlin with a pull model: FrameEnded (on the GBA's
 // emulation thread) stores the newest frame and notifies Kotlin, which copies it into a Bitmap
@@ -186,6 +188,18 @@ void GBAHost::FrameEnded(std::span<const u32> video_buffer)
 }
 #endif  // HAS_LIBMGBA
 }  // namespace
+
+void Android::PrepareGBASave(int device_number, std::string_view rom_path,
+                             std::string_view save_path)
+{
+  JNIEnv* env = IDCache::GetEnvForThread();
+  jstring j_rom_path = ToJString(env, rom_path);
+  jstring j_save_path = ToJString(env, save_path);
+  env->CallStaticVoidMethod(IDCache::GetGBAHostClass(), IDCache::GetGBAHostOnSaveOpening(),
+                            device_number, j_rom_path, j_save_path);
+  env->DeleteLocalRef(j_rom_path);
+  env->DeleteLocalRef(j_save_path);
+}
 
 std::unique_ptr<GBAHostInterface> Host_CreateGBAHost(std::weak_ptr<HW::GBA::Core> core)
 {

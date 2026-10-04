@@ -43,6 +43,7 @@ import org.dolphinemu.dolphinemu.features.input.ui.viewholder.InputMappingContro
 import org.dolphinemu.dolphinemu.features.settings.model.Settings
 import org.dolphinemu.dolphinemu.features.settings.model.view.DateTimeChoiceSetting
 import org.dolphinemu.dolphinemu.features.settings.model.view.DirectoryPicker
+import org.dolphinemu.dolphinemu.features.settings.model.view.DocumentTreePicker
 import org.dolphinemu.dolphinemu.features.settings.model.view.FilePicker
 import org.dolphinemu.dolphinemu.features.settings.model.view.FloatSliderSetting
 import org.dolphinemu.dolphinemu.features.settings.model.view.InputStringSetting
@@ -59,6 +60,7 @@ import org.dolphinemu.dolphinemu.features.settings.ui.viewholder.DateTimeSetting
 import org.dolphinemu.dolphinemu.features.settings.ui.viewholder.FilePickerViewHolder
 import org.dolphinemu.dolphinemu.features.settings.ui.viewholder.HeaderHyperLinkViewHolder
 import org.dolphinemu.dolphinemu.features.settings.ui.viewholder.HeaderViewHolder
+import org.dolphinemu.dolphinemu.features.settings.ui.viewholder.InfoViewHolder
 import org.dolphinemu.dolphinemu.features.settings.ui.viewholder.InputStringSettingViewHolder
 import org.dolphinemu.dolphinemu.features.settings.ui.viewholder.RunRunnableViewHolder
 import org.dolphinemu.dolphinemu.features.settings.ui.viewholder.SettingViewHolder
@@ -128,6 +130,10 @@ class SettingsAdapter(
 
             SettingsItem.TYPE_RUN_RUNNABLE -> RunRunnableViewHolder(
                 ListItemSettingBinding.inflate(inflater, parent, false), this, context
+            )
+
+            SettingsItem.TYPE_INFO -> InfoViewHolder(
+                ListItemSettingBinding.inflate(inflater, parent, false), this
             )
 
             SettingsItem.TYPE_STRING -> InputStringSettingViewHolder(
@@ -372,6 +378,12 @@ class SettingsAdapter(
     fun onFilePickerDirectoryClick(item: SettingsItem, position: Int) {
         clickedItem = item
         clickedPosition = position
+
+        if (item is DocumentTreePicker) {
+            item.launcher.launch(Intent(Intent.ACTION_OPEN_DOCUMENT_TREE))
+            return
+        }
+
         val directoryPicker = item as DirectoryPicker
 
         if (!PermissionsHandler.isExternalStorageLegacy()) {

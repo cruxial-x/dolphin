@@ -102,6 +102,15 @@
     <string name="gba_rom_port_4">Port 4 ROM</string>
     <string name="gb_player_rom">Game Boy Player ROM</string>
     <string name="gba_saves_path">Saves</string>
+    <string name="gba_saves_folder">Linked Saves Folder</string>
+    <string name="gba_save">Save</string>
+    <string name="gba_save_linked">%1$s, from the linked saves folder</string>
+    <string name="gba_save_chosen">%1$s, chosen here</string>
+    <string name="gba_save_chosen_missing">Dolphin\'s own save. The chosen save can no longer be opened.</string>
+    <string name="gba_save_not_found">Dolphin\'s own save. The linked saves folder has no %1$s.srm or %1$s.sav. Tap to choose a save.</string>
+    <string name="gba_save_wrong_size">Dolphin\'s own save. %1$s isn\'t the size of a GBA save.</string>
+    <string name="gba_save_wrong_size_not_chosen">%1$s isn\'t the size of a GBA save, so it was not chosen.</string>
+    <string name="gba_save_no_folder">Dolphin\'s own save. Tap to choose a save from another emulator, or set Linked Saves Folder in GBA Settings to have saves found by name.</string>
     <string name="gba_secondary_display">Show on Secondary Display</string>
     <string name="gba_secondary_display_description">Shows the screen of the first integrated GBA on a second display, such as the second screen of a dual-screen device or an external monitor.</string>
     <string name="wii_submenu">Wii</string>

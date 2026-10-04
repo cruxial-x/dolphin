@@ -155,5 +155,6 @@ jmethodID GetGBAHostOnHostCreated();
 jmethodID GetGBAHostOnHostDestroyed();
 jmethodID GetGBAHostOnGameChanged();
 jmethodID GetGBAHostOnFrameEnded();
+jmethodID GetGBAHostOnSaveOpening();
 
 }  // namespace IDCache

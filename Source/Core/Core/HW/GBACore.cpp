@@ -38,6 +38,7 @@
 
 #ifdef ANDROID
 #include "jni/AndroidCommon/AndroidCommon.h"
+#include "jni/GBASaves.h"
 #endif
 
 namespace HW::GBA
@@ -248,6 +249,11 @@ bool Core::Start(u64 gc_ticks)
 
     m_save_path = NetPlay::IsNetPlayRunning() ? NetPlay::GetGBASavePath(m_device_number) :
                                                 GetSavePath(m_rom_path, m_device_number);
+#ifdef ANDROID
+    // The app may replace the save with one it shares with other emulators before it is opened.
+    if (!NetPlay::IsNetPlayRunning())
+      Android::PrepareGBASave(m_device_number, m_rom_path, m_save_path);
+#endif
     if (!m_save_path.empty() && !LoadSave(m_save_path.c_str()))
       return false;
   }

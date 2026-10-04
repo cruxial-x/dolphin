@@ -45,6 +45,9 @@ object FileBrowserHelper {
     )
 
     @JvmField
+    val GBA_SAVE_EXTENSIONS: HashSet<String> = hashSetOf("sav", "srm")
+
+    @JvmField
     val BIN_EXTENSION: HashSet<String> = hashSetOf("bin")
 
     @JvmField
