@@ -95,6 +95,7 @@
     <string name="serial_port_1_device">GameCube Serial Port 1 Device</string>
     <string name="gba_settings">GBA Settings</string>
     <string name="gba_bios_path">BIOS</string>
+    <string name="gba_rom">ROM</string>
     <string name="gba_rom_port_1">Port 1 ROM</string>
     <string name="gba_rom_port_2">Port 2 ROM</string>
     <string name="gba_rom_port_3">Port 3 ROM</string>
