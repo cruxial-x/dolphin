@@ -16,8 +16,8 @@ import java.util.concurrent.TimeUnit
 
 /**
  * Keeps the save of an integrated GBA in step with a save outside of Dolphin: the one chosen for
- * the port, or the one in the linked saves folder that is named after the ROM (see
- * [GbaLinkedSaves]).
+ * the port, or the one in the saves folder that is named after the ROM (see [GbaLinkedSaves]).
+ * A game that has no save in the saves folder gets one there once Dolphin's own file holds a save.
  *
  * mGBA only ever opens Dolphin's own save file. The outside save is copied over it just before
  * mGBA opens it, and Dolphin's file is copied back out shortly after the game has written to it,
@@ -33,9 +33,11 @@ object GbaSaveSync {
 
     private class Session(
         val internal: File,
-        val external: Uri,
+        // Null until the save has been created in the saves folder.
+        var external: Uri?,
         val externalName: String,
-        // The hash of what Dolphin's save and the outside save both held when last copied.
+        // The hash of what Dolphin's save and the outside save both held when last copied, or
+        // empty if there is no outside save yet.
         var syncedHash: String
     ) {
         var lastSeenHash = syncedHash
@@ -90,7 +92,11 @@ object GbaSaveSync {
     }
 
     private fun open(deviceNumber: Int, romPath: String, internal: File) {
-        val save = GbaLinkedSaves.resolve(deviceNumber, romPath) ?: return
+        val save = GbaLinkedSaves.resolve(deviceNumber, romPath)
+        if (save == null) {
+            openWithoutOutsideSave(deviceNumber, romPath, internal)
+            return
+        }
 
         // Two GBAs would overwrite each other's progress in one save, so only the first gets it.
         if (sessions.values.any { it.external == save.uri }) return
@@ -134,6 +140,21 @@ object GbaSaveSync {
         sessions[deviceNumber] = Session(internal, save.uri, save.name, syncedHash)
     }
 
+    /**
+     * Has a game with no save in the saves folder get one there. Dolphin's own save is left as
+     * it is, and is copied out under the ROM's name as soon as it holds a save.
+     */
+    private fun openWithoutOutsideSave(deviceNumber: Int, romPath: String, internal: File) {
+        val name = GbaLinkedSaves.getNameOfSaveToCreate(deviceNumber, romPath) ?: return
+
+        // As with a save that exists, only the first of two GBAs with the same game gets it.
+        if (sessions.values.any { it.external == null && it.externalName == name }) return
+
+        val session = Session(internal, null, name, "")
+        sessions[deviceNumber] = session
+        copyOut(session)
+    }
+
     private fun copyOut(session: Session) {
         try {
             if (!session.internal.isFile) return
@@ -143,16 +164,25 @@ object GbaSaveSync {
             session.changedSinceLastLook = false
             if (internalHash == session.syncedHash) return
 
-            // Something else changed the outside save while the game was running. The game being
-            // played wins, but what it replaces is kept.
-            val externalBytes = read(session.external)
-            if (externalBytes != null && hash(externalBytes) != session.syncedHash) {
-                backUp(session.internal, session.externalName, externalBytes)
-            }
+            var external = session.external
+            if (external == null) {
+                // mGBA only gives its file a save's size once it knows what kind of save the
+                // game has. Until then there is nothing to create a save from.
+                if (!GbaLinkedSaves.isSaveSize(internalBytes.size.toLong())) return
+                external = GbaLinkedSaves.createSave(session.externalName, internalBytes) ?: return
+                session.external = external
+            } else {
+                // Something else changed the outside save while the game was running. The game
+                // being played wins, but what it replaces is kept.
+                val externalBytes = read(external)
+                if (externalBytes != null && hash(externalBytes) != session.syncedHash) {
+                    backUp(session.internal, session.externalName, externalBytes)
+                }
 
-            if (!write(session.external, internalBytes)) return
+                if (!write(external, internalBytes)) return
+            }
             session.syncedHash = internalHash
-            writeRecord(session.internal, Record(internalHash, session.external.toString()))
+            writeRecord(session.internal, Record(internalHash, external.toString()))
         } catch (e: Exception) {
             Log.error("[GbaSaveSync] Failed to copy out ${session.externalName}: $e")
         }
