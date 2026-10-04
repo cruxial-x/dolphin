@@ -758,6 +758,17 @@ bool Core::GetRomInfo(const char* rom_path, std::array<u8, 20>& hash, std::strin
 
 std::string Core::GetSavePath(std::string_view rom_path, int device_number)
 {
+#ifdef ANDROID
+  // The last segment of a content URI is an encoded document ID rather than the file's name.
+  std::string display_name;
+  if (IsPathAndroidContent(rom_path) && !Config::Get(Config::MAIN_GBA_SAVES_IN_ROM_PATH))
+  {
+    display_name = GetAndroidContentDisplayName(rom_path);
+    if (!display_name.empty())
+      rom_path = display_name;
+  }
+#endif
+
   std::string save_path =
       fmt::format("{}-{}.sav", rom_path.substr(0, rom_path.find_last_of('.')), device_number + 1);
 
