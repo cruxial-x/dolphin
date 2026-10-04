@@ -5,6 +5,7 @@
 #   MODE=build  Build SHA (a commit on BRANCH).
 #   MODE=sync   Update the master mirror, merge it into BRANCH, push both, then build BRANCH.
 #               With SYNC_BUILD_UNCHANGED=0, stop without building if upstream hadn't moved.
+#   MODE=dev    Build SHA, the head of pull request PR, as the test app (see thor.init.gradle).
 #
 # With MIRROR_URL (and MIRROR_TOKEN) set, BRANCH and master are also pushed there after the build.
 #
@@ -84,6 +85,10 @@ if [ "$MODE" = sync ]; then
   SHA=$(git rev-parse HEAD)
 else
   : "${SHA:?}"
+  if [ "$MODE" = dev ]; then
+    : "${PR:?}"
+    git fetch --no-tags origin "+refs/pull/$PR/head:refs/remotes/origin/pr"
+  fi
   git checkout -q -f --detach "$SHA"
   git clean -q -ffd
 fi
@@ -95,6 +100,11 @@ base64 -d <<< "$KEYSTORE_B64" > /tmp/thor.keystore
 
 short_sha=$(git rev-parse --short=10 HEAD)
 export THOR_VERSION_SUFFIX="-$short_sha"
+apk_prefix=dolphin-thor
+if [ "$MODE" = dev ]; then
+  export THOR_DEV=1 THOR_VERSION_SUFFIX="-dev-$short_sha"
+  apk_prefix=dolphin-thor-dev
+fi
 
 ccache -z > /dev/null
 (cd Source/Android && ./gradlew --no-daemon --console=plain --init-script thor/thor.init.gradle \
@@ -109,7 +119,7 @@ badging=$("$ANDROID_HOME/build-tools/37.0.0/aapt2" dump badging \
 badging=${badging%%$'\n'*}
 version_name=$(sed -E "s/.*versionName='([^']*)'.*/\1/" <<< "$badging")
 version_code=$(sed -E "s/.*versionCode='([^']*)'.*/\1/" <<< "$badging")
-apk="dolphin-thor-$version_name.apk"
+apk="$apk_prefix-$version_name.apk"
 cp Source/Android/app/build/outputs/apk/release/app-release.apk "$OUT/$apk"
 
 info SHA "$(git rev-parse HEAD)"
@@ -120,6 +130,11 @@ info TAG "$version_name"
 
 base=$(git merge-base HEAD upstream/master)
 {
+  if [ "$MODE" = dev ]; then
+    echo "Test build of #$PR. It installs as Dolphin Thor Dev, next to Dolphin Thor, and is" \
+         "signed with the Android debug key."
+    echo
+  fi
   echo "Based on dolphin-emu/dolphin@\`$(git rev-parse --short=10 "$base")\`" \
        "($(git log -1 --format=%cs "$base"))."
   echo
