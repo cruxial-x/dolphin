@@ -7,6 +7,9 @@
 #               With SYNC_BUILD_UNCHANGED=0, stop without building if upstream hadn't moved.
 #   MODE=dev    Build SHA, the head of pull request PR, as the test app (see thor.init.gradle).
 #
+# Nothing is built if only documentation or CI files (see app_unchanged_since) have changed since
+# the release LAST_RELEASE_TAG or, for a pull request, since BRANCH. FORCE_BUILD=1 builds anyway.
+#
 # With MIRROR_URL (and MIRROR_TOKEN) set, BRANCH and master are also pushed there after the build.
 #
 # Results go to /out: the APK, info.env (for the workflow) and notes.md (release notes).
@@ -35,6 +38,26 @@ exec 9> /work/lock
 flock 9
 
 info() { echo "$1=$2" >> "$OUT/info.env"; }
+
+# Whether everything that goes into the app is the same as in commit $1.
+app_unchanged_since() {
+  git diff --quiet "$1" HEAD -- . ':(exclude,glob)*.md' ':(exclude).gitea' \
+    ':(exclude)Source/Android/thor/docs'
+}
+
+# Pushes to the public copy of the repository, if there is one.
+mirror() {
+  [ -n "${MIRROR_URL:-}" ] || return 0
+  # The first -c clears the helper below, so that GIT_TOKEN is never offered to the mirror.
+  if git -c credential.helper= \
+       -c credential.helper='!f() { echo username=x-access-token; echo "password=$MIRROR_TOKEN"; }; f' \
+       push --force "$MIRROR_URL" "HEAD:refs/heads/$BRANCH" upstream/master:refs/heads/master; then
+    info MIRROR pushed
+  else
+    info MIRROR failed
+    return 1
+  fi
+}
 
 git config --global --add safe.directory '*'
 git config --global user.name "Thor CI"
@@ -93,6 +116,24 @@ else
   git clean -q -ffd
 fi
 
+if [ "${FORCE_BUILD:-0}" != 1 ]; then
+  since=
+  if [ "$MODE" = dev ]; then
+    since=$(git merge-base "origin/$BRANCH" HEAD)
+  elif [ -n "${LAST_RELEASE_TAG:-}" ] && git fetch -q --no-tags origin \
+         "+refs/tags/$LAST_RELEASE_TAG:refs/thor/last-release"; then
+    since=refs/thor/last-release
+  fi
+  if [ -n "$since" ] && app_unchanged_since "$since"; then
+    echo "Only documentation or CI files have changed since $(git rev-parse --short=10 "$since");" \
+         "not building."
+    info BUILD skipped
+    # There is no release for the workflow to report a failed push after, so fail here.
+    mirror
+    exit 0
+  fi
+fi
+
 git submodule sync -q --recursive
 git submodule update -q --init --recursive --force --jobs 8
 
@@ -143,15 +184,6 @@ base=$(git merge-base HEAD upstream/master)
   git log --reverse --no-merges --format='- %s' "$base..HEAD"
 } > "$OUT/notes.md"
 
-# The public copy of the repository. This comes last and doesn't fail the build, so that the
-# release on this server still goes out; the workflow reports a failed push afterwards.
-if [ -n "${MIRROR_URL:-}" ]; then
-  # The first -c clears the helper above, so that GIT_TOKEN is never offered to the mirror.
-  if git -c credential.helper= \
-       -c credential.helper='!f() { echo username=x-access-token; echo "password=$MIRROR_TOKEN"; }; f' \
-       push --force "$MIRROR_URL" "HEAD:refs/heads/$BRANCH" upstream/master:refs/heads/master; then
-    info MIRROR pushed
-  else
-    info MIRROR failed
-  fi
-fi
+# This comes last and doesn't fail the build, so that the release on this server still goes out;
+# the workflow reports a failed push afterwards.
+mirror || true

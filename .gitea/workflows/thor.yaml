@@ -6,6 +6,8 @@
 #   upstream, and then merged into thor. If upstream moved, the result is pushed and built. A
 #   merge conflict is reported as an issue.
 # - Running the workflow by hand does the same, but always builds.
+# - A change to only documentation or CI files (top-level *.md, .gitea, Source/Android/thor/docs)
+#   isn't built or released, since the app would be the same. It is still pushed to GitHub.
 # - Each build is also pushed to MIRROR_REPO on GitHub and released there under the same tag.
 # - Pull requests into thor get a test build of their head commit: "Dolphin Thor Dev", a separate
 #   app signed with the Android debug key, published here as a prerelease and never on GitHub.
@@ -61,18 +63,23 @@ jobs:
           MODE: ${{ gitea.event_name == 'push' && 'build' || gitea.event_name == 'pull_request' && 'dev' || 'sync' }}
           PR: ${{ gitea.event.pull_request.number }}
           SYNC_BUILD_UNCHANGED: ${{ gitea.event_name == 'workflow_dispatch' && '1' || '0' }}
+          FORCE_BUILD: ${{ gitea.event_name == 'workflow_dispatch' && '1' || '0' }}
         run: |
           name="thor-ci-${{ gitea.run_id }}"
           docker volume create "$WORK_VOLUME" > /dev/null
           mirror_url="https://github.com/$MIRROR_REPO.git"
           if [ "$MODE" = dev ]; then mirror_url=; fi
+          last_release=$(curl -fsS -H "Authorization: token $GIT_TOKEN" \
+            "${{ gitea.server_url }}/api/v1/repos/${{ gitea.repository }}/releases/latest" |
+            jq -r '.tag_name // empty') || last_release=
           set +e
           # Leave a couple of cores and some memory to everything else on the host.
           docker run --name "$name" --cpuset-cpus 0-11 --memory 12g \
             -v "$WORK_VOLUME:/work" \
             -e ORIGIN_URL="${{ gitea.server_url }}/${{ gitea.repository }}.git" \
             -e BRANCH=thor -e SHA="$BUILD_SHA" -e PR \
-            -e MODE -e SYNC_BUILD_UNCHANGED -e GIT_TOKEN \
+            -e MODE -e SYNC_BUILD_UNCHANGED -e FORCE_BUILD -e GIT_TOKEN \
+            -e LAST_RELEASE_TAG="$last_release" \
             -e KEYSTORE_B64 -e KEYSTORE_PASS -e KEY_ALIAS \
             -e MIRROR_URL="$mirror_url" -e MIRROR_TOKEN \
             "$BUILDER_IMAGE"
