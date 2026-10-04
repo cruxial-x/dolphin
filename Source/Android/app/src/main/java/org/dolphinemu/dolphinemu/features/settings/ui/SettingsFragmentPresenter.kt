@@ -855,6 +855,25 @@ class SettingsFragmentPresenter(
                 "/GBA/gba_bios.bin"
             )
         )
+        // The game inserted in the integrated GBA connected to each controller port.
+        val gbaRoms = arrayOf(
+            StringSetting.MAIN_GBA_ROM_1 to R.string.gba_rom_port_1,
+            StringSetting.MAIN_GBA_ROM_2 to R.string.gba_rom_port_2,
+            StringSetting.MAIN_GBA_ROM_3 to R.string.gba_rom_port_3,
+            StringSetting.MAIN_GBA_ROM_4 to R.string.gba_rom_port_4
+        )
+        for ((setting, title) in gbaRoms) {
+            sl.add(
+                FilePicker(
+                    context,
+                    setting,
+                    title,
+                    0,
+                    fragmentView.activityResultLaunchers.requestGbaRomFile,
+                    null
+                )
+            )
+        }
         sl.add(
             FilePicker(
                 context,
