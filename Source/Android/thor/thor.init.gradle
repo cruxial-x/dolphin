@@ -11,7 +11,10 @@
 //   as the release tag, since that's what Obtainium compares to detect updates.
 // - With THOR_DEV=1, builds the test app instead: "Dolphin Thor Dev", under the ID of Dolphin's
 //   own debug builds (org.dolphinemu.dolphinemu.debug), so that it can be installed next to
-//   Dolphin Thor. It is otherwise the same release build.
+//   Dolphin Thor. It is otherwise the same release build, except for its version code: Dolphin's
+//   is a count of commits, which is lower on one pull request's branch than on another's that
+//   has more commits, and Android refuses to install a lower one over a higher one. The test
+//   app's is the time of the build in minutes instead, so every build installs over the last.
 //
 // Usage: ./gradlew --init-script thor/thor.init.gradle assembleRelease
 def versionSuffix = System.getenv('THOR_VERSION_SUFFIX')
@@ -32,6 +35,10 @@ allprojects {
         }
         androidComponents.onVariants(androidComponents.selector().withBuildType('release')) {
             it.applicationId.set(dev ? 'org.dolphinemu.dolphinemu.debug' : 'org.dolphinemu.handheld')
+            if (dev) {
+                def minutes = (System.currentTimeMillis() / 60000) as int
+                it.outputs.each { output -> output.versionCode.set(minutes) }
+            }
         }
     }
 }
