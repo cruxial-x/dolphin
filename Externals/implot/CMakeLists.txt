@@ -10,7 +10,6 @@ set(SRCS
 )
 
 add_library(implot STATIC ${SRCS})
-dolphin_disable_warnings(implot)
 target_include_directories(implot
   PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/implot"
   PRIVATE imgui
@@ -22,7 +21,11 @@ target_link_libraries(implot
 )
 
 # https://github.com/epezent/implot/pull/565
+# -include and its path are separate generator expressions: one with a space in it is split into
+# two list items, and dolphin_disable_warnings drops the path's half as a warning flag when the
+# source directory starts with /w (/work, say), leaving "$<1:-include" for the compiler.
 target_compile_options(implot PRIVATE
   $<$<CXX_COMPILER_ID:MSVC>:/FI${CMAKE_CURRENT_SOURCE_DIR}/implot_isnan_fix.h>
-  $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-include ${CMAKE_CURRENT_SOURCE_DIR}/implot_isnan_fix.h>
+  $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-include>
+  $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:${CMAKE_CURRENT_SOURCE_DIR}/implot_isnan_fix.h>
 )
