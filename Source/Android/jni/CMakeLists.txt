@@ -15,6 +15,8 @@ add_library(main SHARED
   GameList/GameFileCache.cpp
   GBAHost.cpp
   GpuDriver.cpp
+  HotkeyScheduler.cpp
+  HotkeyScheduler.h
   InfinityConfig.cpp
   Input/Control.cpp
   Input/Control.h
