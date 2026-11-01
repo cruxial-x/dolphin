@@ -41,15 +41,24 @@ finding them.
    Settings**, then **GameCube Input**, and set the port to **GBA (Integrated)**. Use Port 1
    for Four Swords Adventures, and Port 2 for games that use a GBA next to a GameCube
    controller, such as The Wind Waker. Open that port's settings to map the GBA's buttons.
-3. Start the game. The GBA appears on the bottom screen.
+3. To share GBA saves with another emulator, set **Saves** under **GBA Settings** to that
+   emulator's save folder. Saves are matched by the ROM's file name (`<rom name>.srm` or
+   `<rom name>.sav`), and a game with no save there gets `<rom name>.sav`. Once a port has a
+   ROM, its settings also show a **Save** row to pick that port's save.
+4. Start the game. The GBA appears on the bottom screen.
 
 To use a GBA in every game instead, make the same change in **Settings > GameCube Input**.
 
 ## What has been tested
 
-Only an AYN Thor Max, with The Legend of Zelda: Four Swords Adventures and The Wind Waker's
-Tingle Tuner. Reports from other Thor models, other dual-screen devices and other games are
-welcome.
+Only an AYN Thor Max. Games so far:
+
+- The Legend of Zelda: Four Swords Adventures.
+- The Legend of Zelda: The Wind Waker's Tingle Tuner.
+- Animal Crossing, with the integrated GBA on Port 2; the GBA island works.
+- Sonic Adventure 2: Battle's Tiny Chao Garden, with a real GBA game and its save file.
+
+Reports from other Thor models, other dual-screen devices and other games are welcome.
 
 Not tested yet: save states, pausing, and changing the controller type while a game is running.
 
