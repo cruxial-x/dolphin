@@ -884,23 +884,16 @@ class SettingsFragmentPresenter(
                 null
             )
         )
-        sl.add(
-            DirectoryPicker(
-                context,
-                StringSetting.MAIN_GBA_SAVES_PATH,
-                R.string.gba_saves_path,
-                0,
-                fragmentView.activityResultLaunchers.requestDirectory,
-                "/GBA/Saves/"
-            )
-        )
+        // Dolphin's own saves folder can't be changed under scoped storage, so the folder that is
+        // offered here is the one saves are shared with other emulators in.
         sl.add(
             DocumentTreePicker(
                 context,
                 StringSetting.MAIN_GBA_SAVES_FOLDER,
-                R.string.gba_saves_folder,
+                R.string.gba_saves_path,
                 0,
-                fragmentView.activityResultLaunchers.requestGbaSavesFolder
+                fragmentView.activityResultLaunchers.requestGbaSavesFolder,
+                "/GBA/Saves/"
             )
         )
         sl.add(
@@ -984,9 +977,11 @@ class SettingsFragmentPresenter(
                 else -> context.getString(R.string.gba_save_chosen, save.name)
             }
         } else {
-            val save = GbaLinkedSaves.findSave(romPath)
+            val saves = GbaLinkedSaves.findSaves(romPath)
+            val save = saves?.firstOrNull()
             when {
                 !GbaLinkedSaves.isFolderSet -> context.getString(R.string.gba_save_no_folder)
+                saves == null -> context.getString(R.string.gba_save_folder_missing)
                 save == null -> context.getString(
                     R.string.gba_save_not_found,
                     GbaLinkedSaves.getSaveBaseName(romPath) ?: ""
