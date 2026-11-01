@@ -27,6 +27,7 @@ enum class MenuTag {
     STATISTICS("statistics"),
     ADVANCED_GRAPHICS("advanced_graphics"),
     GCPAD_TYPE("gc_pad_type"),
+    HOTKEYS("hotkeys"),
     WIIMOTE("wiimote"),
     WIIMOTE_EXTENSION("wiimote_extension"),
     GCPAD_1("gcpad", 0),
@@ -84,6 +85,8 @@ enum class MenuTag {
                 EmulatedController.getGcPad(subType)
         } else if (isWiimoteMenu) {
             EmulatedController.getWiimote(subType)
+        } else if (this == HOTKEYS) {
+            EmulatedController.getHotkeys()
         } else {
             throw UnsupportedOperationException()
         }
