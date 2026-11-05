@@ -14,6 +14,8 @@ add_library(main SHARED
   GameList/GameFile.h
   GameList/GameFileCache.cpp
   GBAHost.cpp
+  GameList/TitleDatabase.cpp
+  GameList/TitleDatabase.h
   GpuDriver.cpp
   HotkeyScheduler.cpp
   HotkeyScheduler.h

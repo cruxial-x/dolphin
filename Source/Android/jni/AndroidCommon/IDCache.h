@@ -157,4 +157,8 @@ jmethodID GetGBAHostOnGameChanged();
 jmethodID GetGBAHostOnFrameEnded();
 jmethodID GetGBAHostOnSaveOpening();
 
+jclass GetTitleDatabaseClass();
+jfieldID GetTitleDatabasePointer();
+jmethodID GetTitleDatabaseConstructor();
+
 }  // namespace IDCache

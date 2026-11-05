@@ -158,6 +158,10 @@ static jmethodID s_gba_host_on_game_changed;
 static jmethodID s_gba_host_on_frame_ended;
 static jmethodID s_gba_host_on_save_opening;
 
+static jclass s_title_database_class;
+static jfieldID s_title_database_pointer;
+static jmethodID s_title_database_constructor;
+
 namespace IDCache
 {
 JNIEnv* GetEnvForThread()
@@ -758,6 +762,21 @@ jmethodID GetGBAHostOnSaveOpening()
   return s_gba_host_on_save_opening;
 }
 
+jclass GetTitleDatabaseClass()
+{
+  return s_title_database_class;
+}
+
+jfieldID GetTitleDatabasePointer()
+{
+  return s_title_database_pointer;
+}
+
+jmethodID GetTitleDatabaseConstructor()
+{
+  return s_title_database_constructor;
+}
+
 }  // namespace IDCache
 
 extern "C" {
@@ -1061,6 +1080,13 @@ JNIEXPORT jint JNI_OnLoad(JavaVM* vm, void* reserved)
   s_gba_host_on_save_opening = env->GetStaticMethodID(
       gba_host_class, "onSaveOpening", "(ILjava/lang/String;Ljava/lang/String;)V");
   env->DeleteLocalRef(gba_host_class);
+
+  const jclass title_database_class =
+      env->FindClass("org/dolphinemu/dolphinemu/model/TitleDatabase");
+  s_title_database_class = reinterpret_cast<jclass>(env->NewGlobalRef(title_database_class));
+  s_title_database_pointer = env->GetFieldID(title_database_class, "pointer", "J");
+  s_title_database_constructor = env->GetMethodID(title_database_class, "<init>", "(J)V");
+  env->DeleteLocalRef(title_database_class);
 
   return JNI_VERSION;
 }
